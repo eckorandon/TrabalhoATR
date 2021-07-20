@@ -8,7 +8,7 @@
 // 
 //  Alunos:
 //  Estevao Coelho Kiel de Oliveira - 2016119416
-//  Italo José Dias - 2017002121 
+//  Italo Jose Dias - 2017002121 
 
 //  Para que a biblioteca Pthreads funcione corretamente e necessario tomar alguns cuidados
 //  
