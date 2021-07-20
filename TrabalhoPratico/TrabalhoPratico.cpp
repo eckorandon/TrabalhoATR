@@ -71,8 +71,8 @@ void* ExibicaoDados(void* arg);
 void* ExibicaoAlarmes(void* arg);
 
 //DECLARACAO DE VARIAVEIS
-int RamBuffer[RAM];
-int DiscBuffer[DISC];
+char RamBuffer[RAM];
+char DiscBuffer[DISC];
 
 
 //THREAD PRIMARIA
@@ -85,16 +85,16 @@ int main() {
     int key;
 
     //CRIACAO DAS THREADS SECUNDARIAS
-    /*i = 1;
+    i = 1;
     status = pthread_create(&hLeituraSDCD, NULL, LeituraSDCD, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraSDCD);
-    else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);*/
+    else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);
 
-    i = 2;
+    /*i = 2;
     status = pthread_create(&hLeituraPIMS, NULL, LeituraPIMS, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraPIMS);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);
-    /*
+    
     i = 3;
     status = pthread_create(&hCapturaDados, NULL, CapturaDados, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaDados);
@@ -281,8 +281,7 @@ void* LeituraSDCD(void* arg) {
             }
 
             //IMPRIME A MENSAGEM do SDCD
-            for (int j = 0; j < 52; j++)
-            {
+            for (int j = 0; j < 52; j++) {
                 printf("%c", SDCD[j]);
             }
 
@@ -402,8 +401,7 @@ void* LeituraPIMS(void* arg) {
             }
 
             //IMPRIME A MENSAGEM do SDCD
-            for (int j = 0; j < 31; j++)
-            {
+            for (int j = 0; j < 31; j++) {
                 printf("%c", PIMS[j]);
             }
 
