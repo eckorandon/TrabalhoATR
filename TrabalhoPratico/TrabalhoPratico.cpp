@@ -92,19 +92,15 @@ char DiscBuffer[DISC][52];
 
 /* =================================================================================================== */
 /*  THREAD PRIMARIA*/
-/*  CRIACAO DAS THREADS E TRATAMENTO DO TECLADO*/
+/*  CRIACAO DAS THREADS SECUNDARIA, PROCESSOS FILHOS E TRATAMENTO DAS ENTRADAS DO TECLADO*/
 
 int main() {
 
     pthread_t hLeituraSDCD, hLeituraPIMS, hCapturaDados, hCapturaAlarmes, hExibicaoDados, hExibicaoAlarmes;
 
 /*  DECLARACAO VARIAVEIS LOCAIS DA MAIN*/
-    int status, i, key;
-    char ProcessA[] = "\\Debug\\ExibicaoDados.exe";
-    char ProcessB[] = "\\Debug";
-
-
-    
+    int i, key;
+    BOOL status;
 
 /*  CRIACAO DAS THREADS SECUNDARIAS*/
     i = 1;
@@ -127,27 +123,42 @@ int main() {
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaAlarmes);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);*/
 
-/*  CRIACAO DOS PROCESOS - TERMINAL A E B*/
-    BOOL statusProcess;
-    STARTUPINFO si;				    // StartUpInformation para novo processo
-    PROCESS_INFORMATION NewProcess;	// Informações sobre novo processo criado
+    /*CRIACAO DOS PROCESOS*/
+    STARTUPINFO si;				                        // StartUpInformation para novo processo
+    PROCESS_INFORMATION NewProcess;	                    // Informações sobre novo processo criado
+
+    SetConsoleTitle(L"TERMINAL MAIN");
 
     ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);	// Tamanho da estrutura em bytes
+    si.cb = sizeof(si);	                                // Tamanho da estrutura em bytes
 
+    /*PROCESSO DE EXIBICAO DE DADOS - TERMINAL A*/
+    status = CreateProcess(
+        L"..\\Debug\\ExibicaoDados.exe",                // Caminho do arquivo executável
+        NULL,                                           // Apontador p/ parâmetros de linha de comando
+        NULL,                                           // Apontador p/ descritor de segurança
+        NULL,                                           // Idem, threads do processo
+        FALSE,	                                        // Herança de handles
+        CREATE_NEW_CONSOLE,	                            // Flags de criação
+        NULL,	                                        // Herança do ambiente de execução
+        L"..\\Debug",                                   // Diretório do arquivo executável
+        &si,			                                // lpStartUpInfo
+        &NewProcess);	                                // lpProcessInformation
+    if (!status) printf("Erro na criacao do Terminal A! Codigo = %d\n", GetLastError());
 
-    statusProcess = CreateProcess(
-        ProcessA, // Caminho do arquivo executável
-        NULL,                       // Apontador p/ parâmetros de linha de comando
-        NULL,                       // Apontador p/ descritor de segurança
-        NULL,                       // Idem, threads do processo
-        FALSE,	                     // Herança de handles
-        NORMAL_PRIORITY_CLASS,	     // Flags de criação
-        NULL,	                     // Herança do ambiente de execução
-        ProcessB,              // Diretório do arquivo executável
-        &si,			             // lpStartUpInfo
-        &NewProcess);	             // lpProcessInformation
-    if (!statusProcess) printf("Erro na criacao do Notepad! Codigo = %d\n", GetLastError());
+    /*PROCESSO DE EXIBICAO DE ALARMES - TERMINAL B*/
+    status = CreateProcess(
+        L"..\\Debug\\ExibicaoAlarmes.exe",              // Caminho do arquivo executável
+        NULL,                                           // Apontador p/ parâmetros de linha de comando
+        NULL,                                           // Apontador p/ descritor de segurança
+        NULL,                                           // Idem, threads do processo
+        FALSE,	                                        // Herança de handles
+        CREATE_NEW_CONSOLE,	                            // Flags de criação
+        NULL,	                                        // Herança do ambiente de execução
+        L"..\\Debug",                                   // Diretório do arquivo executável
+        &si,			                                // lpStartUpInfo
+        &NewProcess);	                                // lpProcessInformation
+    if (!status) printf("Erro na criacao do Terminal B! Codigo = %d\n", GetLastError());
 
 /*  TRATAMENTO INPUTS DO TECLADO*/
     while (TRUE) {

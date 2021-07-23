@@ -1,9 +1,12 @@
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <conio.h>		// _getch
 int ExibicaoDados();
 
 int main() {
-
+    SetConsoleTitle(L"TERMINAL A");
     ExibicaoDados();
 }
 
