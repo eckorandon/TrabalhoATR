@@ -45,6 +45,7 @@
 /*  DEFINE AREA*/
 
 #define HAVE_STRUCT_TIMESPEC
+#define WIN32_LEAN_AND_MEAN
 #define _CHECKERROR	    1				                            // Ativa funcao CheckForError
 #define RAM             100
 #define DISC            200
@@ -63,6 +64,7 @@
 #include <iostream>
 #include <windows.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include <errno.h>
 #include <signal.h>
@@ -98,13 +100,18 @@ int main() {
 
 /*  DECLARACAO VARIAVEIS LOCAIS DA MAIN*/
     int status, i, key;
+    char ProcessA[] = "\\Debug\\ExibicaoDados.exe";
+    char ProcessB[] = "\\Debug";
+
+
+    
 
 /*  CRIACAO DAS THREADS SECUNDARIAS*/
-    /*i = 1;
+    i = 1;
     status = pthread_create(&hLeituraSDCD, NULL, LeituraSDCD, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraSDCD);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);
-
+    /*
     i = 2;
     status = pthread_create(&hLeituraPIMS, NULL, LeituraPIMS, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraPIMS);
@@ -118,17 +125,29 @@ int main() {
     i = 4;
     status = pthread_create(&hCapturaAlarmes, NULL, CapturaAlarmes, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaAlarmes);
-    else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);
-    
-    i = 5;
-    status = pthread_create(&hExibicaoDados, NULL, ExibicaoDados, (void*)i);
-    if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hExibicaoDados);
-    else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);
-    */
-    i = 6;
-    status = pthread_create(&hExibicaoAlarmes, NULL, ExibicaoAlarmes, (void*)i);
-    if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hExibicaoAlarmes);
-    else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);
+    else printf("Erro na criacao da thread %d! Codigo = %d\n", i, status);*/
+
+/*  CRIACAO DOS PROCESOS - TERMINAL A E B*/
+    BOOL statusProcess;
+    STARTUPINFO si;				    // StartUpInformation para novo processo
+    PROCESS_INFORMATION NewProcess;	// Informações sobre novo processo criado
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);	// Tamanho da estrutura em bytes
+
+
+    statusProcess = CreateProcess(
+        ProcessA, // Caminho do arquivo executável
+        NULL,                       // Apontador p/ parâmetros de linha de comando
+        NULL,                       // Apontador p/ descritor de segurança
+        NULL,                       // Idem, threads do processo
+        FALSE,	                     // Herança de handles
+        NORMAL_PRIORITY_CLASS,	     // Flags de criação
+        NULL,	                     // Herança do ambiente de execução
+        ProcessB,              // Diretório do arquivo executável
+        &si,			             // lpStartUpInfo
+        &NewProcess);	             // lpProcessInformation
+    if (!statusProcess) printf("Erro na criacao do Notepad! Codigo = %d\n", GetLastError());
 
 /*  TRATAMENTO INPUTS DO TECLADO*/
     while (TRUE) {
@@ -484,184 +503,6 @@ void* CapturaAlarmes(void* arg) {
     for (i = 0; i < 100000; ++i) {
         printf("%d ", index);
         Sleep(1);	// delay de 1 ms
-    }
-
-    pthread_exit((void*)index);
-
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
-    return (void*)index;
-}
-
-/* =================================================================================================== */
-/*  THREAD SECUNDARIA DE EXIBICAO DE DADOS DO PROCESSO*/
-/*  XXXX*/
-/*
-    [] FALTA TUDO
-*/
-
-void* ExibicaoDados(void* arg) {
-
-/*  DECLARACAO DE VARIAVEIS LOCAIS*/
-    int i, index = (int)arg;
-
-    char    SDCD[75];
-
-/*  PREENCHENDO VALORES GENERICOS DOS DADOS QUE SERAO EXIBIDOS NO TERMINAL A*/
-    for (int j = 0; j < 71; j++) {
-        if (j == 4 || j == 14 || j == 17 || j == 20 || j == 31 || j == 48 || j == 60 || j == 74) {
-            SDCD[j] = ':';
-        }
-        else if (j == 9 || j == 27 || j == 42 || j == 57) {
-            SDCD[j] = ' ';
-        }
-        else if (j == 11 || j == 46 || j == 71 || j == 73) {
-            SDCD[j] = 'O';
-        }
-        else if (j == 13 || j == 29 || j == 44) {
-            SDCD[j] = 'A';
-        }
-        else if (j == 2 || j == 59) {
-            SDCD[j] = 'E';
-        }
-        else if (j == 58) {
-            SDCD[j] = 'U';
-        }
-        else if (j == 0) {
-            SDCD[j] = 'N';
-        }
-        else if (j == 1) {
-            SDCD[j] = 'S';
-        }
-        else if (j == 3) {
-            SDCD[j] = 'Q';
-        }
-        else if (j == 10) {
-            SDCD[j] = 'H';
-        }
-        else if (j == 12 || j == 47) {
-            SDCD[j] = 'R';
-        }
-        else if (j == 23) {
-            SDCD[j] = '.';
-        }
-        else if (j == 28) {
-            SDCD[j] = 'T';
-        }
-        else if (j == 30) {
-            SDCD[j] = 'G';
-        }
-        else if (j == 43) {
-            SDCD[j] = 'V';
-        }
-        else if (j == 45) {
-            SDCD[j] = 'L';
-        }
-        else if (j == 70) {
-            SDCD[j] = 'M';
-        }
-        else if (j == 72) {
-            SDCD[j] = 'D';
-        }
-        else
-            SDCD[j] = '#';
-    }
-
-    while (true) {
-        
-/*      IMPRIME A MENSAGEM do SDCD*/
-        for (int j = 0; j < 52; j++) {
-            printf("%c", SDCD[j]);
-        }
-
-        printf("\n");
-    }
-
-    pthread_exit((void*)index);
-
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
-    return (void*)index;
-}
-
-/* =================================================================================================== */
-/*  THREAD SECUNDARIA DE EXIBICAO DE ALARMES*/
-/*  XXXX*/
-/*
-    [] FALTA TUDO
-*/
-
-void* ExibicaoAlarmes(void* arg) {
-    /*  DECLARACAO DE VARIAVEIS LOCAIS*/
-    int i, index = (int)arg;
-
-    char    PIMS[54];
-
-    /*  PREENCHENDO VALORES GENERICOS DOS DADOS QUE SERAO EXIBIDOS NO TERMINAL A*/
-    for (int j = 0; j < 71; j++) {
-        if (j == 2 || j == 5 || j == 13 || j == 30 || j == 40 || j == 48) {
-            PIMS[j] = ':';
-        }
-        else if (j == 8 || j == 20 || j == 23 || j == 35 || j == 43) {
-            PIMS[j] = ' ';
-        }
-        else if (j == 24 || j == 26 || j == 38) {
-            PIMS[j] = 'A';
-        }
-        else if (j == 11 || j == 29 || j == 46) {
-            PIMS[j] = 'E';
-        }
-        else if (j == 39) {
-            PIMS[j] = 'U';
-        }
-        else if (j == 9) {
-            PIMS[j] = 'N';
-        }
-        else if (j == 10) {
-            PIMS[j] = 'S';
-        }
-        else if (j == 12) {
-            PIMS[j] = 'Q';
-        }
-        else if (j == 27 || j == 37 || j == 45) {
-            PIMS[j] = 'R';
-        }
-        else if (j == 36) {
-            PIMS[j] = 'G';
-        }
-        else if (j == 47) {
-            PIMS[j] = 'V';
-        }
-        else if (j == 25) {
-            PIMS[j] = 'L';
-        }
-        else if (j == 28) {
-            PIMS[j] = 'M';
-        }
-        else if (j == 22) {
-            PIMS[j] = 'D';
-        }
-        else if (j == 21) {
-            PIMS[j] = 'I';
-        }
-        else if (j == 36) {
-            PIMS[j] = 'G';
-        }
-        else if (j == 44) {
-            PIMS[j] = 'P';
-        }
-        else
-            PIMS[j] = '#';
-    }
-
-    while (true) {
-
-        /*      IMPRIME A MENSAGEM do PIMS*/
-        for (int j = 0; j < 52; j++) {
-            printf("%c", PIMS[j]);
-        }
-
-        printf("\n");
     }
 
     pthread_exit((void*)index);
