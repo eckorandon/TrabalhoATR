@@ -89,10 +89,10 @@ void* CapturaAlarmes(void* arg);
 /*  DECLARACAO DAS VARIAVEIS GLOBAIS*/
 
 /*Espaco destinado a lista circular na memoria RAM*/
-char RamBuffer[RAM][52];
+char            RamBuffer[RAM][52];
 
 /*Variaveis de controle das posicoes na lista circular*/
-int p_ocup = 0, p_livre = 0;
+unsigned int    p_ocup = 0, p_livre = 0;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -518,10 +518,11 @@ void* LeituraPIMS(void* arg) {
             p_livre = (p_livre + 1) % RAM;
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(1000);
+            Sleep(100);
 
         } /*fim do for*/
     } /*fim do while*/
+
     pthread_exit((void*)index);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
@@ -549,6 +550,10 @@ void* CapturaDados(void* arg) {
     char    SDCD[52];
 
     while (true) {
+
+        /*Para fins de teste*/
+        Sleep(5000);
+
         for (int j = 0; j < 52; j++) {
             RamBuffer[p_ocup][j] = SDCD[j];
         }
@@ -559,14 +564,9 @@ void* CapturaDados(void* arg) {
         for (int j = 0; j < 52; j++) {
             printf("%c", SDCD[j]);
         }
+        printf("\n");
+
     } /*fim do while*/
-
-    index ;
-
-    for (i = 0; i < 100000; ++i) {
-        printf("%d ", index);
-        Sleep(1);	// delay de 1 ms
-    }
 
     pthread_exit((void*)index);
 
@@ -592,7 +592,7 @@ void* CapturaAlarmes(void* arg) {
     index = (int)arg;
 
     for (i = 0; i < 100000; ++i) {
-        printf("%d ", index);
+        //printf("%d ", index);
         Sleep(1);	// delay de 1 ms
     }
 
