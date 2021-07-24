@@ -20,7 +20,6 @@
     de video. O primeiro ira exibir os dados do processo de fabricacao de celulose aos operadores (TERMINAL A) e o segundo
     apresentara previsoes de falhas operacionais geradas pelo PIMS (TERMINAL B).
 */
-//fds
 
 /* ======================================================================================================================== */
 /*  INTRUCOES PARA UTILIZACAO DA BIBLIOTECA PTHREAD*/
@@ -47,6 +46,9 @@
     5.  Por fim, selecione Project -> Properties -> Configuration Properties -> Debugging 
         e entao preencha o item "Environment" com
         PATH=C:\Program Files\pthreads-w32-2-9-1-release\Pre-built.2\dll\x86
+
+    6. Certifique-se de que o seu projeto esta como x86. Do lado de Debug é possivel alterar
+       este parametro.
 */
 
 /* ======================================================================================================================== */
