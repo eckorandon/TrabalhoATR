@@ -89,10 +89,10 @@ void* CapturaAlarmes(void* arg);
 /*  DECLARACAO DAS VARIAVEIS GLOBAIS*/
 
 /*Espaco destinado a lista circular na memoria RAM*/
-char            RamBuffer[RAM][52];
+char    RamBuffer[RAM][52];
 
 /*Variaveis de controle das posicoes na lista circular*/
-unsigned int    p_ocup = 0, p_livre = 0;
+int     p_ocup = 0, p_livre = 0;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -120,12 +120,12 @@ int main() {
     status = pthread_create(&hLeituraSDCD, NULL, LeituraSDCD, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraSDCD);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    
+    /*
     i = 2;
     status = pthread_create(&hLeituraPIMS, NULL, LeituraPIMS, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraPIMS);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    
+    */
     i = 3;
     status = pthread_create(&hCapturaDados, NULL, CapturaDados, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaDados);
@@ -518,7 +518,7 @@ void* LeituraPIMS(void* arg) {
             p_livre = (p_livre + 1) % RAM;
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(100);
+            Sleep(1000000000);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -552,10 +552,10 @@ void* CapturaDados(void* arg) {
     while (true) {
 
         /*Para fins de teste*/
-        Sleep(5000);
+        Sleep(1000);
 
         for (int j = 0; j < 52; j++) {
-            RamBuffer[p_ocup][j] = SDCD[j];
+            SDCD[j] = RamBuffer[p_ocup][j];
         }
 
         /*Movendo a posicao de livre para o proximo slot da memoria circular*/
