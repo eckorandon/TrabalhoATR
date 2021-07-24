@@ -10,8 +10,8 @@
     Luiz Themystokliz S. Mendes
  
     Alunos:
-    Estevao Coelho Kiel de Oliveira - 2016119416
-    Italo Jose Dias - 2017002121 
+    Estevao Coelho Kiel de Oliveira     - 2016119416
+    Italo Jose Dias                     - 2017002121 
 */
 
 /* =================================================================================================== */
@@ -87,8 +87,8 @@ void* ExibicaoAlarmes(void* arg);
 /* =================================================================================================== */
 /*  DECLARACAO DE VARIAVEIS GLOBAIS*/
 
-char RamBuffer[RAM][52];
-char DiscBuffer[DISC][52];
+char RamBuffer[RAM][52], DiscBuffer[DISC][52];
+int p_ocup = 0, p_livre = 0;
 
 /* =================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -160,7 +160,7 @@ int main() {
         &NewProcess);	                                // lpProcessInformation
     if (!status) printf("Erro na criacao do Terminal B! Codigo = %d\n", GetLastError());
 
-/*  TRATAMENTO INPUTS DO TECLADO*/
+    /*TRATAMENTO INPUTS DO TECLADO*/
     while (TRUE) {
         key = _getch();
         switch (key) {
@@ -332,9 +332,17 @@ void* LeituraSDCD(void* arg) {
             }
 
             //IMPRIME A MENSAGEM do SDCD
+            printf("SDCD\n");
             for (int j = 0; j < 52; j++) {
                 printf("%c", SDCD[j]);
+                RamBuffer[p_livre][j] = SDCD[j];
             }
+            printf("\nRAM -> p_livre = %d\n", p_livre);
+            for (int j = 0; j < 52; j++) {
+                printf("%c", RamBuffer[p_livre][j]);
+            }
+
+            p_livre = (p_livre + 1) % RAM;
 
             printf("\n");
 
