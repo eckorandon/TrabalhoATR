@@ -96,7 +96,8 @@ int p_ocup = 0, p_livre = 0;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
-/*  CRIACAO DAS THREADS SECUNDARIAS, PROCESSOS FILHOS E TRATAMENTO DAS ENTRADAS DO TECLADO*/
+/*  CRIACAO DAS THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
+/*  TAREFA DE LEITURA DO TECLADO*/
 
 int main() {
 
@@ -128,7 +129,7 @@ int main() {
     status = pthread_create(&hCapturaAlarmes, NULL, CapturaAlarmes, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaAlarmes);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-
+    
     /*Criando processos filhos*/
     STARTUPINFO si;				                                               /*StartUpInformation para novo processo*/
     PROCESS_INFORMATION NewProcess;	                                           /*Informacoes sobre novo processo criado*/
@@ -206,33 +207,22 @@ int main() {
     return EXIT_SUCCESS;
 } /*fim da funcao main*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* =================================================================================================== */
+/* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA SDCD*/
-/*  GERACAO DE VALORES E GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA RAM*/
+/*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DE DADOS DO SDCD*/
+/*  GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA* /
 /*
-    [] FALTA GRAVACAO DE VALORES NA MEMORIA CIRCULAR COM USO DE MUTEX
-    [] FALTA COMENTAR NO PADRAO
+    TAREFAS
+    [X] Geracao de valores aleatorio
+    [X] Gravacao em memoria RAM
+    [ ] Tratamento quando a lista esta cheia
 */
 
 void* LeituraSDCD(void* arg) {
-    
+
+    /*Declarando variaveis locais LeituraSDCD()*/
     int     index = (int)arg,
-            k = 0, i = 0, l = 0,
-            NSEQ, TIPO;
+            k = 0, i = 0, l = 0;
 
     char    SDCD[52], UE[9] = "        ", MODO[1], AM[3] = "AM",
             CaracterAleatorio[37] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
@@ -242,79 +232,68 @@ void* LeituraSDCD(void* arg) {
 
     while (true)
     {
+        /*Gerando valores aleatorios para os campos referentes ao SDCD e gravando-os em memoria*/
         for (i = 1; i < 1000000; ++i) {
 
-            //NSEQ
-            NSEQ = i;
-            for (int j = 0; j < 6; j++)
-            {
+            /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
+            for (int j = 0; j < 6; j++) {
                 k = i / pow(10, (5 - j));
                 k = k % 10;
                 SDCD[j] = k + '0';
             }
             SDCD[6] = '|';
 
-            //TIPO
-            TIPO = 1;
-            SDCD[7] = TIPO + '0';
+            /*Valores de TIPO - Sempre 1*/
+            SDCD[7] = '1';
             SDCD[8] = '|';
 
-            //TAG
-            for (int j = 9; j < 19; j++)
-            {
-                if (j == 12 || j == 15)
-                {
+            /*Valores de TAG - Identificador da variavel do processo - Valores alfanumericos*/
+            for (int j = 9; j < 19; j++) {
+                if (j == 12 || j == 15) {
                     SDCD[j] = '-';
                 }
                 else {
                     SDCD[j] = CaracterAleatorio[(rand()%36)];
-                }
-                
+                } 
             }
             SDCD[19] = '|';
 
-            //VALOR
-            for (int j = 20; j < 28; j++)
-            {
-                if (j == 25)
-                {
+            /*Valores de VALOR - Valor aleatorio da variavel de processo*/
+            for (int j = 20; j < 28; j++) {
+                if (j == 25) {
                     SDCD[j] = '.';
                 }
                 else {
                     SDCD[j] = (rand() % 10)+'0';
                 }
-
             }
             SDCD[28] = '|';
 
-            //UE
+            /*Valores de UE - Unidade de engenharia escolhida aleatoriamente*/
             k = (rand() % 11);
-            for (int j = 0; j < 9; j++)
-            {
+            for (int j = 0; j < 9; j++) {
                 UE[j] = Unidade[k][j];
             }
 
             k = 0;
-            for (int j = 29; j < 37; j++)
-            {
+            for (int j = 29; j < 37; j++) {
                 SDCD[j] = UE[k];
                 k++;
             }
             SDCD[37] = '|';
 
-            //MODO
+            /*Valores de MODO - Pode ser (A)utomatico ou (M)anual*/
             SDCD[38] = AM[(rand() % 2)];
             SDCD[39] = '|';
 
-            //TIMESTAMP
+            /*Valores de TIMESTAMP - Com precisao de milisegundos*/
             SYSTEMTIME st;
             GetLocalTime(&st);
 
-            //HORA
+            /*Hora*/
             k = 0;
             l = 40;
-            for (int j = 0; j < 2; j++)
-            {
+            for (int j = 0; j < 2; j++) {
                 k = st.wHour / pow(10, (1 - j));
                 k = k % 10;
                 SDCD[l] = k + '0';
@@ -322,11 +301,10 @@ void* LeituraSDCD(void* arg) {
             }
             SDCD[42] = ':';
 
-            //MINUTO
+            /*Minuto*/
             k = 0;
             l = 43;
-            for (int j = 0; j < 2; j++)
-            {
+            for (int j = 0; j < 2; j++) {
                 k = st.wMinute / pow(10, (1 - j));
                 k = k % 10;
                 SDCD[l] = k + '0';
@@ -334,11 +312,10 @@ void* LeituraSDCD(void* arg) {
             }
             SDCD[45] = ':';
 
-            //SEGUNDO
+            /*Segundo*/
             k = 0;
             l = 46;
-            for (int j = 0; j < 2; j++)
-            {
+            for (int j = 0; j < 2; j++) {
                 k = st.wSecond / pow(10, (1 - j));
                 k = k % 10;
                 SDCD[l] = k + '0';
@@ -346,36 +323,47 @@ void* LeituraSDCD(void* arg) {
             }
             SDCD[48] = '.';
 
-            //MILISEGUNDO
+            /*Milisegundo*/
             k = 0;
             l = 49;
-            for (int j = 0; j < 3; j++)
-            {
+            for (int j = 0; j < 3; j++) {
                 k = st.wMilliseconds / pow(10, (2 - j));
                 k = k % 10;
                 SDCD[l] = k + '0';
                 l++;
             }
 
-            //IMPRIME A MENSAGEM do SDCD
-            printf("SDCD\n");
+            /*Gravacao dos dados aleatorios em memoria*/
             for (int j = 0; j < 52; j++) {
-                printf("%c", SDCD[j]);
                 RamBuffer[p_livre][j] = SDCD[j];
             }
-            printf("\nRAM -> p_livre = %d\n", p_livre);
-            for (int j = 0; j < 52; j++) {
-                printf("%c", RamBuffer[p_livre][j]);
-            }
 
+            /*PARA TESTES ============= Imprime as menssagems no SDCD ============= PARA TESTES*/
+            /*
+                printf("Thread %d ", index);
+
+                printf("SDCD\n");
+                for (int j = 0; j < 52; j++) {
+                   printf("%c", SDCD[j]);
+                }
+
+                printf("\n");
+
+                printf("RAM -> p_livre = %d\n", p_livre);
+                for (int j = 0; j < 52; j++) {
+                    printf("%c", RamBuffer[p_livre][j]);
+                }
+
+                printf("\n");
+            */
+
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
             p_livre = (p_livre + 1) % RAM;
 
-            printf("\n");
-
-            //printf("%d ", index);
-            //Sleep(1);	// delay de 1000 ms
-        }
-    }
+            /*Delay em milisegundos antes do fim do laco for*/
+            /*Sleep(1);*/
+        } /*fim do for*/
+    } /*fim do while*/
 
     pthread_exit((void*)index);
 
@@ -384,12 +372,29 @@ void* LeituraSDCD(void* arg) {
     return (void*)index;
 }
 
-/* =================================================================================================== */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA PIMS*/
-/*  GERACAO DE VALORES E GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA RAM*/
+/*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS*/
+/*  GRAVACAO DOS ALARMES NAO CRITICOS NA LISTA CIRCULAR EM MEMORIA*/
+/*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 /*
-    [] FALTA GRAVACAO DE VALORES NA MEMORIA CIRCULAR COM USO DE MUTEX
-    [] FALTA COMENTAR NO PADRAO
+    TAREFAS
+    [ ] 
 */
 
 void* LeituraPIMS(void* arg) {
@@ -509,11 +514,13 @@ void* LeituraPIMS(void* arg) {
     return (void*)index;
 }
 
-/* =================================================================================================== */
+/* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE DADOS DO PROCESSO*/
-/*  XXXX*/
+/*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO*/
+/*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
 /*
-    [] FALTA TUDO
+    TAREFAS
+    []
 */
 
 void* CapturaDados(void* arg) {
@@ -533,11 +540,13 @@ void* CapturaDados(void* arg) {
     return (void*)index;
 }
 
-/* =================================================================================================== */
+/* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE ALARMES
-/*  XXXX*/
+/*  RETIRA AS MENSSAGENS DE ALARMES NAO CRITICOS EM MEMORIA*/
+/*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 /*
-    [] FALTA TUDO
+    TAREFAS
+    []
 */
 
 void* CapturaAlarmes(void* arg) {
