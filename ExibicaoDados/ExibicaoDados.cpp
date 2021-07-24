@@ -6,7 +6,7 @@
 int ExibicaoDados();
 
 int main() {
-    SetConsoleTitle(L"TERMINAL A");
+    SetConsoleTitle(L"TERMINAL A");                         /*Nomeando o terminal do processo*/
     ExibicaoDados();
 }
 

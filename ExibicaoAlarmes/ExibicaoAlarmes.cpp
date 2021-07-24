@@ -6,7 +6,7 @@
 int ExibicaoAlarmes();
 
 int main() {
-    SetConsoleTitle(L"TERMINAL B");
+    SetConsoleTitle(L"TERMINAL B");                                     /*Nomeando o terminal do processo*/
     ExibicaoAlarmes();
 }
 
