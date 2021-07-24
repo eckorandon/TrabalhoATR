@@ -37,32 +37,40 @@
 #include <conio.h>		                                                       /*_getch()*/
 #include "CheckForError.h"                                                     /*CheckForError()*/
 
+/* ======================================================================================================================== */
+/*  TAREFA DE EXIBICAO DE DADOS DO PROCESSO*/
+/*  QUANDO SINALIZADA PELA TAREFA DE CAPTURA DE DADOS RETIRA MENSSAGENS DE DADOS DE PROCESSO DO ARQUIVO*/
+/*  EXIBE AS MESMAS NO TERMINAL*/
+/*
+    TAREFAS
+    [ ] Mostrar estados bloqueio/desbloqueio
+*/
 
 int main() {
-    SetConsoleTitle(L"TERMINAL A");                                            /*Nomeando o terminal do processo*/
+    /*Nomeando o terminal do processo*/
+    SetConsoleTitle(L"TERMINAL A");                                            
     
-
-    /*  DECLARACAO DE VARIAVEIS LOCAIS*/
-
-
-    /*  PREENCHENDO VALORES GENERICOS DOS DADOS QUE SERAO EXIBIDOS NO TERMINAL A*/
-    char    SDCD[76] = { 'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', ' ', 'H', 'O', 'R', 'A', ':',
-                        'H', 'H', ':', 'M', 'M', ':', 'S', 'S', '.', 'M', 'S', 'S', ' ',
-                        'T', 'A', 'G', ':', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', ' ',
-                        'V', 'A', 'L', 'O', 'R', ':', '#', '#', '#', '#', '#', '#', '#', '#', ' ',
-                        'U', 'E', ':', '#', '#', '#', '#', '#', '#', '#', '#', ' ', 'M', 'O', 'D', 'O', ':', '#' };
+    /*Declarando variaveis locais main()*/
+    /*Valores genericos para fins de formatacao*/
+    char    SDCD[76] = { 'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', ' ', 
+                         'H', 'O', 'R', 'A', ':', 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', '.', 'M', 'S', 'S', ' ',
+                         'T', 'A', 'G', ':', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', ' ',
+                         'V', 'A', 'L', 'O', 'R', ':', '#', '#', '#', '#', '#', '#', '#', '#', ' ',
+                         'U', 'E', ':', '#', '#', '#', '#', '#', '#', '#', '#', ' ', 
+                         'M', 'O', 'D', 'O', ':', '#' };
 
     while (true) {
 
-        /*      IMPRIME A MENSAGEM do SDCD*/
-        for (int j = 0; j < 76; j++) {
-            printf("%c", SDCD[j]);
-        }
+        /*PARA TESTES ============= Imprime as menssagems do SDCD ============= PARA TESTES*/
+        /*
+            for (int j = 0; j < 76; j++) {
+                printf("%c", SDCD[j]);
+            }
 
-        printf("\n");
+            printf("\n");
+        */
     }
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (0);
 }

@@ -140,7 +140,8 @@ int main() {
     STARTUPINFO si;				                                               /*StartUpInformation para novo processo*/
     PROCESS_INFORMATION NewProcess;	                                           /*Informacoes sobre novo processo criado*/
 
-    SetConsoleTitle(L"TERMINAL PRINCIPAL");                                    /*Nomeando o terminal da thread primaria*/
+    /*Nomeando o terminal da thread primaria*/
+    SetConsoleTitle(L"TERMINAL PRINCIPAL");                                    
 
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);	                                                       /*Tamanho da estrutura em bytes*/
@@ -346,7 +347,7 @@ void* LeituraSDCD(void* arg) {
                 RamBuffer[p_livre][j] = SDCD[j];
             }
 
-            /*PARA TESTES ============= Imprime as menssagems no SDCD ============= PARA TESTES*/
+            /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
             /*
                 printf("Thread %d ", index);
 
@@ -494,7 +495,7 @@ void* LeituraPIMS(void* arg) {
 
             }
 
-            /*PARA TESTES ============= Imprime as menssagems no PIMS ============= PARA TESTES*/
+            /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
             /*
                 printf("Thread %d ", index);
 
