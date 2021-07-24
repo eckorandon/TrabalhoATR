@@ -239,8 +239,8 @@ void* LeituraSDCD(void* arg) {
                             "m       ", "kgf     ", "N       ", "m/s     ", "m/s^2   " },
             Hora[3], Minuto[3], Segundo[3], MiliSegundo[4];
 
-    while (true)
-    {
+    while (true) {
+
         /*Gerando valores aleatorios para os campos referentes ao SDCD e gravando-os em memoria*/
         for (i = 1; i < 1000000; ++i) {
 
@@ -401,8 +401,8 @@ void* LeituraPIMS(void* arg) {
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
 
-    while (true)
-    {
+    while (true) {
+
         for (i = 1; i < 1000000; ++i) {
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
@@ -541,7 +541,15 @@ void* LeituraPIMS(void* arg) {
 */
 
 void* CapturaDados(void* arg) {
+
+    /*Declarando variaveis locais CapturaDados()*/
     int index, i;
+
+    char    SDCD[52]
+
+    while (true) {
+
+    }
 
     index = (int)arg;
 
