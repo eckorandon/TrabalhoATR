@@ -333,7 +333,7 @@ void* LeituraSDCD(void* arg) {
                 l++;
             }
 
-            /*Gravacao dos dados aleatorios em memoria*/
+            /*Gravacao dos dados gerados em memoria*/
             for (int j = 0; j < 52; j++) {
                 RamBuffer[p_livre][j] = SDCD[j];
             }
@@ -362,6 +362,7 @@ void* LeituraSDCD(void* arg) {
 
             /*Delay em milisegundos antes do fim do laco for*/
             /*Sleep(1);*/
+
         } /*fim do for*/
     } /*fim do while*/
 
@@ -371,21 +372,6 @@ void* LeituraSDCD(void* arg) {
     // com o Visual Studio da Microsoft
     return (void*)index;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA PIMS*/
@@ -399,8 +385,7 @@ void* LeituraSDCD(void* arg) {
 
 void* LeituraPIMS(void* arg) {
     int     index = (int)arg,
-            k = 0, i = 0, l = 0,
-            NSEQ, TIPO, IDALARME, GRAU, PREV, TIMESTAMP;
+            k = 0, i = 0, l = 0, randon = 0;
 
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
@@ -409,10 +394,8 @@ void* LeituraPIMS(void* arg) {
     {
         for (i = 1; i < 1000000; ++i) {
 
-            //NSEQ
-            NSEQ = i;
-            for (int j = 0; j < 6; j++)
-            {
+            /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
+            for (int j = 0; j < 6; j++) {
                 k = i / pow(10, (5 - j));
                 k = k % 10;
                 PIMS[j] = k + '0';
@@ -420,52 +403,48 @@ void* LeituraPIMS(void* arg) {
             PIMS[6] = '|';
 
             //TIPO
+            /*Valores de TIPO - 2 = nao critico e 9 = critico*/
             PIMS[7] = CriticoNaoCritico[(rand() % 2)];
-            TIPO = PIMS[7] - '0';
             PIMS[8] = '|';
 
-            //ID ALARME
-            IDALARME = rand() % 10000;
+            /*Valores de ID ALARME - Numero aleatorio de 1 ate 9999 - Identificador da condicao anormal*/
+            randon = rand() % 10000;
             k = 0;
-            for (int j = 9; j < 13; j++)
-            {
-                k = IDALARME / pow(10, (12 - j));
+            for (int j = 9; j < 13; j++) {
+                k = randon / pow(10, (12 - j));
                 k = k % 10;
                 PIMS[j] = k + '0';
             }
             PIMS[13] = '|';
 
-            //GRAU
-            GRAU = rand() % 100;
+            /*Valores de GRAU - Numero aleatorio de 1 ate 99 - Grau de impacto da condicao anormal*/
+            randon = rand() % 100;
             k = 0;
-            for (int j = 14; j < 16; j++)
-            {
-                k = GRAU / pow(10, (15 - j));
+            for (int j = 14; j < 16; j++) {
+                k = randon / pow(10, (15 - j));
                 k = k % 10;
                 PIMS[j] = k + '0';
             }
             PIMS[16] = '|';
 
-            //PREV
-            PREV = rand() % 14441;
+            /*Valores de PREV - Numero aleatorio em minutos de 1 ate 14440 ate a ocorrencia da condicao*/
+            randon = rand() % 14441;
             k = 0;
-            for (int j = 17; j < 22; j++)
-            {
-                k = PREV / pow(10, (21 - j));
+            for (int j = 17; j < 22; j++) {
+                k = randon / pow(10, (21 - j));
                 k = k % 10;
                 PIMS[j] = k + '0';
             }
             PIMS[22] = '|';
 
-            //TIMESTAMP
+            /*Valores de TIMESTAMP*/
             SYSTEMTIME st;
             GetLocalTime(&st);
 
-            //HORA
+            /*Hora*/
             k = 0;
             l = 23;
-            for (int j = 0; j < 2; j++)
-            {
+            for (int j = 0; j < 2; j++) {
                 k = st.wHour / pow(10, (1 - j));
                 k = k % 10;
                 PIMS[l] = k + '0';
@@ -473,11 +452,10 @@ void* LeituraPIMS(void* arg) {
             }
             PIMS[25] = ':';
 
-            //MINUTO
+            /*Minuto*/
             k = 0;
             l = 26;
-            for (int j = 0; j < 2; j++)
-            {
+            for (int j = 0; j < 2; j++) {
                 k = st.wMinute / pow(10, (1 - j));
                 k = k % 10;
                 PIMS[l] = k + '0';
@@ -485,28 +463,48 @@ void* LeituraPIMS(void* arg) {
             }
             PIMS[28] = ':';
 
-            //SEGUNDO
+            /*Segundos*/
             k = 0;
             l = 29;
-            for (int j = 0; j < 2; j++)
-            {
+            for (int j = 0; j < 2; j++) {
                 k = st.wSecond / pow(10, (1 - j));
                 k = k % 10;
                 PIMS[l] = k + '0';
                 l++;
             }
 
-            //IMPRIME A MENSAGEM do SDCD
+            /*Gravacao dos dados gerados em memoria*/
             for (int j = 0; j < 31; j++) {
-                printf("%c", PIMS[j]);
+                RamBuffer[p_livre][j] = PIMS[j];
             }
 
-            printf("\n");
+            /*PARA TESTES ============= Imprime as menssagems no PIMS ============= PARA TESTES*/
+            /*
+                printf("Thread %d ", index);
+
+                printf("PIMS\n");
+                for (int j = 0; j < 31; j++) {
+                   printf("%c", PIMS[j]);
+                }
+
+                printf("\n");
+
+                printf("RAM -> p_livre = %d\n", p_livre);
+                for (int j = 0; j < 31; j++) {
+                    printf("%c", RamBuffer[p_livre][j]);
+                }
+
+                printf("\n");
+            */
+
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+            p_livre = (p_livre + 1) % RAM;
 
             //printf("%d ", index);
             //Sleep(1);	// delay de 1000 ms
-        }
-    }
+
+        } /*fim do for*/
+    } /*fim do while*/
     pthread_exit((void*)index);
 
     // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
