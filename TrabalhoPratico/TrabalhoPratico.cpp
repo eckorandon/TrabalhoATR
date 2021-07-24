@@ -500,7 +500,7 @@ void* LeituraPIMS(void* arg) {
             }
 
             /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
-            
+            /*
                 printf("Thread %d ", index);
 
                 printf("PIMS\n");
@@ -516,6 +516,7 @@ void* LeituraPIMS(void* arg) {
                     }
                 }
                 printf("\n");
+            */
 
             /*Delay em milisegundos antes do fim do laco for*/
             Sleep(1000);
@@ -610,7 +611,6 @@ void* CapturaAlarmes(void* arg) {
             /*Movendo a posicao de livre para o proximo slot da memoria circular*/
             p_ocup = (p_ocup + 1) % RAM;
 
-            printf("Dentro da thread\n");
             for (int j = 0; j < 31; j++) {
                 printf("%c", PIMS[j]);
             }
