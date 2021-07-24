@@ -210,6 +210,7 @@ int main() {
         } /*fim do switch*/
     } /*fim do while*/
 
+    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return EXIT_SUCCESS;
 } /*fim da funcao main*/
 
@@ -375,8 +376,7 @@ void* LeituraSDCD(void* arg) {
 
     pthread_exit((void*)index);
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
 }
 
@@ -523,8 +523,7 @@ void* LeituraPIMS(void* arg) {
     } /*fim do while*/
     pthread_exit((void*)index);
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
 }
 
@@ -552,8 +551,7 @@ void* CapturaDados(void* arg) {
 
     pthread_exit((void*)index);
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
 }
 
@@ -581,7 +579,6 @@ void* CapturaAlarmes(void* arg) {
 
     pthread_exit((void*)index);
 
-    // O comando "return" abaixo é desnecessário, mas presente aqui para compatibilidade
-    // com o Visual Studio da Microsoft
+    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
 }
