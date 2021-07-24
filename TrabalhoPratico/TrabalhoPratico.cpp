@@ -116,22 +116,22 @@ int main() {
     BOOL status;
 
     /*Criando threads secundarias*/
-    /*
+    
     i = 1;
     status = pthread_create(&hLeituraSDCD, NULL, LeituraSDCD, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraSDCD);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    */
+    
     i = 2;
     status = pthread_create(&hLeituraPIMS, NULL, LeituraPIMS, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraPIMS);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    /*
+    
     i = 3;
     status = pthread_create(&hCapturaDados, NULL, CapturaDados, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaDados);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    */
+    
     i = 4;
     status = pthread_create(&hCapturaAlarmes, NULL, CapturaAlarmes, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaAlarmes);
@@ -536,8 +536,8 @@ void* LeituraPIMS(void* arg) {
 /*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
 /*
     TAREFAS
-    [ ] Capturar dados da RAM e armazena temporariamente
-    [ ] Imprimir menssagens na console principal
+    [X] Capturar dados da RAM e armazena temporariamente
+    [X] Imprimir menssagens na console principal
     [ ] Mutex na RAM e p_ocupado
     [ ] Imprimir estados
 */
@@ -553,7 +553,6 @@ void* CapturaDados(void* arg) {
     while (true) {
 
         /*Para fins de teste*/
-        
         Sleep(2000);
 
         if (RamBuffer[p_ocup][7] == '1') {
@@ -584,8 +583,8 @@ void* CapturaDados(void* arg) {
 /*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 /*
     TAREFAS
-    [ ] Capturar dados da RAM de alarmes nao criticos e armazena temporariamente
-    [ ] Imprimir menssagens na console principal
+    [X] Capturar dados da RAM de alarmes nao criticos e armazena temporariamente
+    [X] Imprimir menssagens na console principal
     [ ] Mutex na RAM e p_ocupado
     [ ] Imprimir estados
 */
