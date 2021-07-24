@@ -370,7 +370,7 @@ void* LeituraSDCD(void* arg) {
             p_livre = (p_livre + 1) % RAM;
 
             /*Delay em milisegundos antes do fim do laco for*/
-            /*Sleep(1);*/
+            Sleep(1000);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -517,8 +517,8 @@ void* LeituraPIMS(void* arg) {
             /*Movendo a posicao de livre para o proximo slot da memoria circular*/
             p_livre = (p_livre + 1) % RAM;
 
-            //printf("%d ", index);
-            //Sleep(1);	// delay de 1000 ms
+            /*Delay em milisegundos antes do fim do laco for*/
+            Sleep(1000);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -543,15 +543,25 @@ void* LeituraPIMS(void* arg) {
 void* CapturaDados(void* arg) {
 
     /*Declarando variaveis locais CapturaDados()*/
-    int index, i;
+    int     index = (int)arg,
+            i;
 
-    char    SDCD[52]
+    char    SDCD[52];
 
     while (true) {
+        for (int j = 0; j < 52; j++) {
+            RamBuffer[p_ocup][j] = SDCD[j];
+        }
 
-    }
+        /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+        p_ocup = (p_ocup + 1) % RAM;
 
-    index = (int)arg;
+        for (int j = 0; j < 52; j++) {
+            printf("%c", SDCD[j]);
+        }
+    } /*fim do while*/
+
+    index ;
 
     for (i = 0; i < 100000; ++i) {
         printf("%d ", index);
