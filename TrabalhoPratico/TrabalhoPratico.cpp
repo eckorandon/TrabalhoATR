@@ -98,6 +98,12 @@ int p_ocup = 0, p_livre = 0;
 /*  THREAD PRIMARIA*/
 /*  CRIACAO DAS THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
 /*  TAREFA DE LEITURA DO TECLADO*/
+/*
+    TAREFAS
+    [X] Criacao de threads
+    [X] Criacao de processos
+    [ ] Tratar inputs do teclado
+*/
 
 int main() {
 
@@ -201,7 +207,7 @@ int main() {
         default:
             printf("Voce digitou uma tecla sem funcao\n");
             break;
-        }
+        } /*fim do switch*/
     } /*fim do while*/
 
     return EXIT_SUCCESS;
@@ -210,12 +216,13 @@ int main() {
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA SDCD*/
 /*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DE DADOS DO SDCD*/
-/*  GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA* /
+/*  GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA*/
 /*
     TAREFAS
     [X] Geracao de valores aleatorio
     [X] Gravacao em memoria RAM
     [ ] Tratamento quando a lista esta cheia
+    [ ] Mutex na RAM e p_livre
 */
 
 void* LeituraSDCD(void* arg) {
@@ -224,7 +231,7 @@ void* LeituraSDCD(void* arg) {
     int     index = (int)arg,
             k = 0, i = 0, l = 0;
 
-    char    SDCD[52], UE[9] = "        ", MODO[1], AM[3] = "AM",
+    char    SDCD[52], UE[9] = "        ", AM[3] = "AM",
             CaracterAleatorio[37] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
             Unidade[11][9]{ "kg      ", "kg/m^2  ", "A       ", "V       ", "T       ", "Nm      ",
                             "m       ", "kgf     ", "N       ", "m/s     ", "m/s^2   " },
@@ -375,17 +382,20 @@ void* LeituraSDCD(void* arg) {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA PIMS*/
-/*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS*/
+/*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DO PIMS*/
 /*  GRAVACAO DOS ALARMES NAO CRITICOS NA LISTA CIRCULAR EM MEMORIA*/
 /*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 /*
     TAREFAS
-    [ ] 
+    [X] Geracao de valores aleatorio
+    [X] Gravacao em memoria RAM apenas dos alarmes nao criticos
+    [ ] Tratamento quando a lista esta cheia
+    [ ] Mutex na RAM e p_livre
 */
 
 void* LeituraPIMS(void* arg) {
     int     index = (int)arg,
-            k = 0, i = 0, l = 0, randon = 0;
+            k = 0, i = 0, l = 0, randon = 0, critico = 0;
 
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
@@ -405,6 +415,7 @@ void* LeituraPIMS(void* arg) {
             //TIPO
             /*Valores de TIPO - 2 = nao critico e 9 = critico*/
             PIMS[7] = CriticoNaoCritico[(rand() % 2)];
+            critico = PIMS[7] - '0';
             PIMS[8] = '|';
 
             /*Valores de ID ALARME - Numero aleatorio de 1 ate 9999 - Identificador da condicao anormal*/
@@ -474,8 +485,13 @@ void* LeituraPIMS(void* arg) {
             }
 
             /*Gravacao dos dados gerados em memoria*/
-            for (int j = 0; j < 31; j++) {
-                RamBuffer[p_livre][j] = PIMS[j];
+            if (critico == 2) {
+                for (int j = 0; j < 31; j++) {
+                    RamBuffer[p_livre][j] = PIMS[j];
+                }
+            }
+            else {
+
             }
 
             /*PARA TESTES ============= Imprime as menssagems no PIMS ============= PARA TESTES*/
@@ -488,12 +504,12 @@ void* LeituraPIMS(void* arg) {
                 }
 
                 printf("\n");
-
-                printf("RAM -> p_livre = %d\n", p_livre);
-                for (int j = 0; j < 31; j++) {
-                    printf("%c", RamBuffer[p_livre][j]);
+                if (critico == 2) {
+                    printf("RAM -> p_livre = %d\n", p_livre);
+                    for (int j = 0; j < 31; j++) {
+                        printf("%c", RamBuffer[p_livre][j]);
+                    }
                 }
-
                 printf("\n");
             */
 
@@ -518,7 +534,10 @@ void* LeituraPIMS(void* arg) {
 /*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
 /*
     TAREFAS
-    []
+    [ ] Capturar dados da RAM e armazena temporariamente
+    [ ] Imprimir menssagens na console principal
+    [ ] Mutex na RAM e p_ocupado
+    [ ] Imprimir estados
 */
 
 void* CapturaDados(void* arg) {
@@ -544,7 +563,10 @@ void* CapturaDados(void* arg) {
 /*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 /*
     TAREFAS
-    []
+    [ ] Capturar dados da RAM de alarmes nao criticos e armazena temporariamente
+    [ ] Imprimir menssagens na console principal
+    [ ] Mutex na RAM e p_ocupado
+    [ ] Imprimir estados
 */
 
 void* CapturaAlarmes(void* arg) {
