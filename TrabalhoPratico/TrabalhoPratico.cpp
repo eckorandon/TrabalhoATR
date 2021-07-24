@@ -116,21 +116,22 @@ int main() {
     BOOL status;
 
     /*Criando threads secundarias*/
+    /*
     i = 1;
     status = pthread_create(&hLeituraSDCD, NULL, LeituraSDCD, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraSDCD);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    /*
+    */
     i = 2;
     status = pthread_create(&hLeituraPIMS, NULL, LeituraPIMS, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraPIMS);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-    */
+    /*
     i = 3;
     status = pthread_create(&hCapturaDados, NULL, CapturaDados, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaDados);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
-
+    */
     i = 4;
     status = pthread_create(&hCapturaAlarmes, NULL, CapturaAlarmes, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaAlarmes);
@@ -490,13 +491,16 @@ void* LeituraPIMS(void* arg) {
                 for (int j = 0; j < 31; j++) {
                     RamBuffer[p_livre][j] = PIMS[j];
                 }
+
+                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                p_livre = (p_livre + 1) % RAM;
             }
             else {
-
+                /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
             }
 
             /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
-            /*
+            
                 printf("Thread %d ", index);
 
                 printf("PIMS\n");
@@ -512,13 +516,9 @@ void* LeituraPIMS(void* arg) {
                     }
                 }
                 printf("\n");
-            */
-
-            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-            p_livre = (p_livre + 1) % RAM;
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(1000000000);
+            Sleep(1000);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -552,19 +552,22 @@ void* CapturaDados(void* arg) {
     while (true) {
 
         /*Para fins de teste*/
-        Sleep(1000);
+        
+        Sleep(2000);
 
-        for (int j = 0; j < 52; j++) {
-            SDCD[j] = RamBuffer[p_ocup][j];
+        if (RamBuffer[p_ocup][7] == '1') {
+            for (int j = 0; j < 52; j++) {
+                SDCD[j] = RamBuffer[p_ocup][j];
+            }
+
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+            p_ocup = (p_ocup + 1) % RAM;
+
+            for (int j = 0; j < 52; j++) {
+                printf("%c", SDCD[j]);
+            }
+            printf("\n");
         }
-
-        /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-        p_ocup = (p_ocup + 1) % RAM;
-
-        for (int j = 0; j < 52; j++) {
-            printf("%c", SDCD[j]);
-        }
-        printf("\n");
 
     } /*fim do while*/
 
@@ -587,14 +590,34 @@ void* CapturaDados(void* arg) {
 */
 
 void* CapturaAlarmes(void* arg) {
-    int index, i;
 
-    index = (int)arg;
+    /*Declarando variaveis locais CapturaDados()*/
+    int     index = (int)arg,
+            i;
 
-    for (i = 0; i < 100000; ++i) {
-        //printf("%d ", index);
-        Sleep(1);	// delay de 1 ms
-    }
+    char    PIMS[31];
+
+    while (true) {
+
+        /*Para fins de teste*/
+        Sleep(2000);
+
+        if (RamBuffer[p_ocup][7] == '2') {
+            for (int j = 0; j < 31; j++) {
+                PIMS[j] = RamBuffer[p_ocup][j];
+            }
+
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+            p_ocup = (p_ocup + 1) % RAM;
+
+            printf("Dentro da thread\n");
+            for (int j = 0; j < 31; j++) {
+                printf("%c", PIMS[j]);
+            }
+            printf("\n");
+        }
+
+    } /*fim do while*/
 
     pthread_exit((void*)index);
 
