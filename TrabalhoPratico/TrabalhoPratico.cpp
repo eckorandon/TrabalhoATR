@@ -20,6 +20,7 @@
     de video. O primeiro ira exibir os dados do processo de fabricacao de celulose aos operadores (TERMINAL A) e o segundo
     apresentara previsoes de falhas operacionais geradas pelo PIMS (TERMINAL B).
 */
+//fds
 
 /* ======================================================================================================================== */
 /*  INTRUCOES PARA UTILIZACAO DA BIBLIOTECA PTHREAD*/
