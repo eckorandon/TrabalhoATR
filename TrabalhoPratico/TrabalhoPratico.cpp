@@ -73,6 +73,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <errno.h>
 #include <signal.h>
 #include <conio.h>		                                                       /*_getch()*/
@@ -96,6 +97,69 @@ char    RamBuffer[RAM][52];
 
 /*Variaveis de controle das posicoes na lista circular*/
 int     p_ocup = 0, p_livre = 0;
+
+/* ======================================================================================================================== */
+/*  OBJETOS DE SINCRONIZAÇÃO*/
+/*Mutex para proteção do buffer, usado na possibilidade de duas threas do mesmo tipo tentarem obter a região crítica (dois tipos
+sumidores por exempo)*/
+pthread_mutexattr_t MutexAttr;
+pthread_mutex_t Mutex_buffer;        //Mutex para proteger acesso ao buffer circular
+
+/*Semaforo para sinalização de escrita no buffer*/
+sem_t Sem_escrita;				 //Semáforo para sinalizar o acesso ao buffer para escrita
+
+/*Semaforo para sinalização de leitura no buffer*/
+sem_t Sem_leitura;				 //Semáforo para sinalizar o acesso ao buffer para escrita
+
+/* ======================================================================================================================== */
+/*  DECLARACAO DAS FUNÇÕES DOS OBJETOS DE SINCRONIZAÇÃO*/
+void Wait_leitura(sem_t * Sem_leitura) {
+    int status = sem_wait(Sem_leitura);
+    if (status != 0) {
+        printf("Erro na obtencao do semaforo de leitura! Codigo = %x\n", errno);
+        exit(0);
+    }
+}
+
+void Signal_leitura(sem_t * Sem_leitura) {
+    int status = sem_post(Sem_leitura);
+    if (status != 0) {
+        printf("Erro na liberacao do semaforo de leitura! Codigo = %x\n", errno);
+        exit(0);
+    }
+}
+
+void Wait_escrita(sem_t * Sem_escrita) {
+    int status = sem_wait(Sem_escrita);
+    if (status != 0) {
+        printf("Erro na obtencao do semaforo de leitura! Codigo = %x\n", errno);
+        exit(0);
+    }
+}
+
+void Signal_escrita(sem_t * Sem_escrita) {
+    int status = sem_post(Sem_escrita);
+    if (status != 0) {
+        printf("Erro na liberacao do semaforo de escrita! Codigo = %x\n", errno);
+        exit(0);
+    }
+}
+
+void LockMutex_buffer(pthread_mutex_t * Mutex_buffer) {
+    int status = pthread_mutex_lock(Mutex_buffer);
+    if (status != 0) {
+        printf("Erro na conquista do mutex responsavel pelo buffer! Codigo = %d\n", status);
+        exit(0);
+    }
+}
+
+void UnLockMutex_buffer(pthread_mutex_t * Mutex_buffer) {
+    int status = pthread_mutex_unlock(Mutex_buffer);
+    if (status != 0) {
+        printf("Erro na liberacao do mutex responsavel pelo buffer! Codigo = %d\n", status);
+        exit(0);
+    }
+}
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -143,6 +207,31 @@ int main() {
     /*Criando processos filhos*/
     STARTUPINFO si;				                                               /*StartUpInformation para novo processo*/
     PROCESS_INFORMATION NewProcess;	                                           /*Informacoes sobre novo processo criado*/
+
+    /*Inicializando o mutex*/
+    pthread_mutexattr_init(&MutexAttr);
+    status = pthread_mutexattr_settype(&MutexAttr, PTHREAD_MUTEX_ERRORCHECK);
+    if (status != 0) {
+        printf("Erro nos atributos do Mutex para criacao! Codigo = %d\n", status);
+        exit(0);
+    }
+    status = pthread_mutex_init(&Mutex_buffer, &MutexAttr);
+    if (status != 0) {
+        printf("Erro na criação do Mutex de protecao do buffer! Codigo = %d\n", status);
+        exit(0);
+    }
+
+    /*Inializando os semaforos*/
+    status = sem_init(&Sem_escrita, 0, 0);
+    if (status != 0) {
+        printf("Erro na inicializacao do semaforo de escrita! Codigo = %d\n", errno);
+        exit(0);
+    }
+    status = sem_init(&Sem_leitura, 0, 2);
+    if (status != 0) {
+        printf("Erro na inicializacao do semaforo de leitura! Codigo = %d\n", errno);
+        exit(0);
+    }
 
     /*Nomeando o terminal da thread primaria*/
     SetConsoleTitle(L"TERMINAL PRINCIPAL");                                    
@@ -214,6 +303,14 @@ int main() {
             break;
         } /*fim do switch*/
     } /*fim do while*/
+
+    /*Eliminacao dos objetos de sinalizacao*/
+    status = pthread_mutex_destroy(&Mutex_buffer);
+    if (status != 0) printf("Erro na remocao do mutex de protecao do buffer! i = %d valor = %d\n", i, status);
+    status = sem_destroy(&Sem_escrita);
+    if (status != 0) printf("Erro na remocao do semaforo de sinalizacao de escrita! Valor = %d\n", errno);
+    status = sem_destroy(&Sem_leitura);
+    if (status != 0) printf("Erro na remocao do semaforo de sinalizacao de leitura! Valor = %d\n", errno);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return EXIT_SUCCESS;
@@ -346,6 +443,12 @@ void* LeituraSDCD(void* arg) {
                 l++;
             }
 
+            /*Espera do semaforo para escrita*/
+            Wait_escrita(&Sem_escrita);
+
+            /*Proteção do acesso ao buffer*/
+            LockMutex_buffer(&Mutex_buffer);
+
             /*Gravacao dos dados gerados em memoria*/
             for (int j = 0; j < 52; j++) {
                 RamBuffer[p_livre][j] = SDCD[j];
@@ -372,6 +475,12 @@ void* LeituraSDCD(void* arg) {
 
             /*Movendo a posicao de livre para o proximo slot da memoria circular*/
             p_livre = (p_livre + 1) % RAM;
+
+            /*Proteção do acesso ao buffer finalizado*/
+            UnLockMutex_buffer(&Mutex_buffer);
+
+            /*Espera do semaforo para leitura*/
+            Signal_leitura(&Sem_leitura);
 
             /*Delay em milisegundos antes do fim do laco for*/
             Sleep(1000);
@@ -489,6 +598,12 @@ void* LeituraPIMS(void* arg) {
                 l++;
             }
 
+            /*Espera do semaforo para escrita*/
+            Wait_escrita(&Sem_escrita);
+
+            /*Proteção do acesso ao buffer*/
+            LockMutex_buffer(&Mutex_buffer);
+
             /*Gravacao dos dados gerados em memoria*/
             if (critico == 2) {
                 for (int j = 0; j < 31; j++) {
@@ -501,6 +616,12 @@ void* LeituraPIMS(void* arg) {
             else {
                 /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
             }
+
+            /*Proteção do acesso ao buffer finalizado*/
+            UnLockMutex_buffer(&Mutex_buffer);
+
+            /*Sinalização do semaforo para leitura*/
+            Signal_leitura(&Sem_leitura);
 
             /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
             /*
@@ -558,6 +679,12 @@ void* CapturaDados(void* arg) {
         /*Para fins de teste*/
         Sleep(2000);
 
+        /*Espera do semaforo para leitura*/
+        Wait_leitura(&Sem_leitura);
+
+        /*Proteção do acesso ao buffer*/
+        LockMutex_buffer(&Mutex_buffer);
+
         if (RamBuffer[p_ocup][7] == '1') {
             for (int j = 0; j < 52; j++) {
                 SDCD[j] = RamBuffer[p_ocup][j];
@@ -566,11 +693,18 @@ void* CapturaDados(void* arg) {
             /*Movendo a posicao de livre para o proximo slot da memoria circular*/
             p_ocup = (p_ocup + 1) % RAM;
 
+
             for (int j = 0; j < 52; j++) {
                 printf("%c", SDCD[j]);
             }
             printf("\n");
         }
+        /*Proteção do acesso ao buffer finalizado*/
+        UnLockMutex_buffer(&Mutex_buffer);
+
+        /*Sinalização do semaforo para escrita*/
+        Signal_escrita(&Sem_escrita);
+
 
     } /*fim do while*/
 
@@ -605,6 +739,12 @@ void* CapturaAlarmes(void* arg) {
         /*Para fins de teste*/
         Sleep(2000);
 
+        /*Espera do semaforo para leitura*/
+        Wait_leitura(&Sem_leitura);
+
+        /*Proteção do acesso ao buffer*/
+        LockMutex_buffer(&Mutex_buffer);
+
         if (RamBuffer[p_ocup][7] == '2') {
             for (int j = 0; j < 31; j++) {
                 PIMS[j] = RamBuffer[p_ocup][j];
@@ -618,6 +758,11 @@ void* CapturaAlarmes(void* arg) {
             }
             printf("\n");
         }
+        /*Proteção do acesso ao buffer finalizado*/
+        UnLockMutex_buffer(&Mutex_buffer);
+
+        /*Sinalização do semaforo para escrita*/
+        Signal_escrita(&Sem_escrita);
 
     } /*fim do while*/
 
