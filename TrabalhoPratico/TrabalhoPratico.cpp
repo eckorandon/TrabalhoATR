@@ -57,7 +57,7 @@
 #define HAVE_STRUCT_TIMESPEC
 #define WIN32_LEAN_AND_MEAN
 
-#define _CHECKERROR	    1				                                       /*Ativa funcao CheckForError*/
+#define _CHECKERROR	    1				                                        /*Ativa funcao CheckForError*/
 
 /*Tamanho da lista circular em memoria ram*/
 #define RAM             100
@@ -75,10 +75,10 @@
 #include <pthread.h>
 #include <errno.h>
 #include <signal.h>
-#include <conio.h>		                                                       /*_getch()*/
-#include <math.h>                                                              /*pow()*/
+#include <conio.h>		                                                        /*_getch()*/
+#include <math.h>                                                               /*pow()*/
 #include <time.h>
-#include "CheckForError.h"                                                     /*CheckForError()*/
+#include "CheckForError.h"                                                      /*CheckForError()*/
 
 /* ======================================================================================================================== */
 /*  DECLARACAO DO PROTOTIPO DE FUNCAO DAS THREADS SECUNDARIAS*/
@@ -98,6 +98,10 @@ char    RamBuffer[RAM][52];
 int     p_ocup = 0, p_livre = 0;
 
 /* ======================================================================================================================== */
+/*  HANDLE MUTEX*/
+HANDLE hMutexBuffer;
+
+/* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
 /*  CRIACAO DAS THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
 /*  TAREFA DE LEITURA DO TECLADO*/
@@ -108,18 +112,23 @@ int     p_ocup = 0, p_livre = 0;
     [ ] Tratar inputs do teclado
 */
 
-int main() {
+// ATENCAO FALTA COLOCAR CHECKFORERROR DEU ERRO QUANDO EU COLOQUEI A FUNCAO
 
-    /*Declarando handles das threads*/
+int main() {
+    /*------------------------------------------------------------------------------*/
+    /*Declarando variaveis locais main()*/
+    int i, status;
+    char key;
+    
+    /*------------------------------------------------------------------------------*/
+    /*Criando mutex*/
+    hMutexBuffer = CreateMutex(NULL, FALSE, L"MutexBuffer");
+
+    /*------------------------------------------------------------------------------*/
+    /*Handles threads*/
     pthread_t hLeituraSDCD, hLeituraPIMS, hCapturaDados, hCapturaAlarmes;
 
-    /*Declarando variaveis locais main()*/
-    int i;
-    char key;
-    BOOL status;
-
     /*Criando threads secundarias*/
-    
     i = 1;
     status = pthread_create(&hLeituraSDCD, NULL, LeituraSDCD, (void*)i);
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hLeituraSDCD);
@@ -140,6 +149,7 @@ int main() {
     if (!status) printf("Thread %d criada com Id= %0x \n", i, (int)&hCapturaAlarmes);
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
     
+    /*------------------------------------------------------------------------------*/
     /*Criando processos filhos*/
     STARTUPINFO si;				                                               /*StartUpInformation para novo processo*/
     PROCESS_INFORMATION NewProcess;	                                           /*Informacoes sobre novo processo criado*/
@@ -177,7 +187,8 @@ int main() {
         &si,			                                                       /*lpStartUpInfo*/
         &NewProcess);	                                                       /*lpProcessInformation*/
     if (!status) printf("Erro na criacao do Terminal B! Codigo = %d\n", GetLastError());
-
+    
+    /*------------------------------------------------------------------------------*/
     /*Tratando inputs do teclado*/
     while (TRUE) {
         key = _getch();
@@ -215,6 +226,11 @@ int main() {
         } /*fim do switch*/
     } /*fim do while*/
 
+    /*------------------------------------------------------------------------------*/
+    /*Fechando handles*/
+    CloseHandle(hMutexBuffer);
+
+    /*------------------------------------------------------------------------------*/
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return EXIT_SUCCESS;
 } /*fim da funcao main*/
@@ -227,14 +243,14 @@ int main() {
     TAREFAS
     [X] Geracao de valores aleatorio
     [X] Gravacao em memoria RAM
-    [ ] Tratamento quando a lista esta cheia
-    [ ] Mutex na RAM e p_livre
+    [-] Tratamento quando a lista esta cheia
+    [X] Mutex na RAM e p_livre
 */
 
 void* LeituraSDCD(void* arg) {
 
     /*Declarando variaveis locais LeituraSDCD()*/
-    int     index = (int)arg,
+    int     index = (int)arg, status,
             k = 0, i = 0, l = 0;
 
     char    SDCD[52], UE[9] = "        ", AM[3] = "AM",
@@ -346,32 +362,41 @@ void* LeituraSDCD(void* arg) {
                 l++;
             }
 
+            status = WaitForSingleObject(hMutexBuffer, INFINITE);
             /*Gravacao dos dados gerados em memoria*/
-            for (int j = 0; j < 52; j++) {
-                RamBuffer[p_livre][j] = SDCD[j];
+            if (((p_livre+1) % RAM) == p_ocup) {
+                //bloqueia e alerta fato
+                printf("memoria cheia\n");
+                Sleep(5000);
             }
-
-            /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
-            /*
-                printf("Thread %d ", index);
-
-                printf("SDCD\n");
+            else {
                 for (int j = 0; j < 52; j++) {
-                   printf("%c", SDCD[j]);
+                    RamBuffer[p_livre][j] = SDCD[j];
                 }
 
-                printf("\n");
+                /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
+                /*
+                    printf("Thread %d ", index);
 
-                printf("RAM -> p_livre = %d\n", p_livre);
-                for (int j = 0; j < 52; j++) {
-                    printf("%c", RamBuffer[p_livre][j]);
-                }
+                    printf("SDCD\n");
+                    for (int j = 0; j < 52; j++) {
+                       printf("%c", SDCD[j]);
+                    }
 
-                printf("\n");
-            */
+                    printf("\n");
 
-            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-            p_livre = (p_livre + 1) % RAM;
+                    printf("RAM -> p_livre = %d\n", p_livre);
+                    for (int j = 0; j < 52; j++) {
+                        printf("%c", RamBuffer[p_livre][j]);
+                    }
+
+                    printf("\n");
+                */
+
+                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                p_livre = (p_livre + 1) % RAM;
+            }
+            status = ReleaseMutex(hMutexBuffer);
 
             /*Delay em milisegundos antes do fim do laco for*/
             Sleep(1000);
@@ -394,12 +419,12 @@ void* LeituraSDCD(void* arg) {
     TAREFAS
     [X] Geracao de valores aleatorio
     [X] Gravacao em memoria RAM apenas dos alarmes nao criticos
-    [ ] Tratamento quando a lista esta cheia
-    [ ] Mutex na RAM e p_livre
+    [-] Tratamento quando a lista esta cheia
+    [X] Mutex na RAM e p_livre
 */
 
 void* LeituraPIMS(void* arg) {
-    int     index = (int)arg,
+    int     index = (int)arg, status,
             k = 0, i = 0, l = 0, randon = 0, critico = 0;
 
     char    PIMS[31], CriticoNaoCritico[3] = "29",
@@ -490,17 +515,26 @@ void* LeituraPIMS(void* arg) {
             }
 
             /*Gravacao dos dados gerados em memoria*/
-            if (critico == 2) {
-                for (int j = 0; j < 31; j++) {
-                    RamBuffer[p_livre][j] = PIMS[j];
-                }
-
-                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                p_livre = (p_livre + 1) % RAM;
+            status = WaitForSingleObject(hMutexBuffer, INFINITE);
+            if (((p_livre + 1) % RAM) == p_ocup) {
+                //bloqueia e alerta fato
+                printf("memoria cheia\n");
+                Sleep(5000);
             }
             else {
-                /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
+                if (critico == 2) {
+                    for (int j = 0; j < 31; j++) {
+                        RamBuffer[p_livre][j] = PIMS[j];
+                    }
+
+                    /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                    p_livre = (p_livre + 1) % RAM;
+                }
+                else {
+                    /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
+                }
             }
+            status = ReleaseMutex(hMutexBuffer);
 
             /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
             /*
@@ -541,36 +575,41 @@ void* LeituraPIMS(void* arg) {
     TAREFAS
     [X] Capturar dados da RAM e armazena temporariamente
     [X] Imprimir menssagens na console principal
-    [ ] Mutex na RAM e p_ocupado
+    [X] Mutex na RAM e p_ocupado
     [ ] Imprimir estados
 */
 
 void* CapturaDados(void* arg) {
 
     /*Declarando variaveis locais CapturaDados()*/
-    int     index = (int)arg,
-            i;
+    int     index = (int)arg, status, i;
 
     char    SDCD[52];
 
     while (true) {
 
-        /*Para fins de teste*/
-        Sleep(2000);
-
-        if (RamBuffer[p_ocup][7] == '1') {
-            for (int j = 0; j < 52; j++) {
-                SDCD[j] = RamBuffer[p_ocup][j];
-            }
-
-            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-            p_ocup = (p_ocup + 1) % RAM;
-
-            for (int j = 0; j < 52; j++) {
-                printf("%c", SDCD[j]);
-            }
-            printf("\n");
+        status = WaitForSingleObject(hMutexBuffer, INFINITE);
+        if (p_ocup == p_livre) {
+            //bloqueia e alerta fato???
+            printf("memoria vazia\n");
+            Sleep(5000);
         }
+        else {
+            if (RamBuffer[p_ocup][7] == '1') {
+                for (int j = 0; j < 52; j++) {
+                    SDCD[j] = RamBuffer[p_ocup][j];
+                }
+
+                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                p_ocup = (p_ocup + 1) % RAM;
+
+                for (int j = 0; j < 52; j++) {
+                    printf("%c", SDCD[j]);
+                }
+                printf("\n");
+            }
+        }
+        status = ReleaseMutex(hMutexBuffer);
 
     } /*fim do while*/
 
@@ -588,36 +627,41 @@ void* CapturaDados(void* arg) {
     TAREFAS
     [X] Capturar dados da RAM de alarmes nao criticos e armazena temporariamente
     [X] Imprimir menssagens na console principal
-    [ ] Mutex na RAM e p_ocupado
+    [X] Mutex na RAM e p_ocupado
     [ ] Imprimir estados
 */
 
 void* CapturaAlarmes(void* arg) {
 
     /*Declarando variaveis locais CapturaDados()*/
-    int     index = (int)arg,
-            i;
+    int     index = (int)arg, status, i;
 
     char    PIMS[31];
 
     while (true) {
 
-        /*Para fins de teste*/
-        Sleep(2000);
-
-        if (RamBuffer[p_ocup][7] == '2') {
-            for (int j = 0; j < 31; j++) {
-                PIMS[j] = RamBuffer[p_ocup][j];
-            }
-
-            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-            p_ocup = (p_ocup + 1) % RAM;
-
-            for (int j = 0; j < 31; j++) {
-                printf("%c", PIMS[j]);
-            }
-            printf("\n");
+        status = WaitForSingleObject(hMutexBuffer, INFINITE);
+        if (p_ocup == p_livre) {
+            //bloqueia e alerta fato ???
+            printf("memoria vazia\n");
+            Sleep(5000);
         }
+        else {
+            if (RamBuffer[p_ocup][7] == '2') {
+                for (int j = 0; j < 31; j++) {
+                    PIMS[j] = RamBuffer[p_ocup][j];
+                }
+
+                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                p_ocup = (p_ocup + 1) % RAM;
+
+                for (int j = 0; j < 31; j++) {
+                    printf("%c", PIMS[j]);
+                }
+                printf("\n");
+            }
+        }
+        status = ReleaseMutex(hMutexBuffer);
 
     } /*fim do while*/
 
