@@ -124,6 +124,7 @@ int main() {
     /*Criando mutex*/
     hMutexBuffer = CreateMutex(NULL, FALSE, L"MutexBuffer");
     CheckForError(hMutexBuffer);
+
     /*------------------------------------------------------------------------------*/
     /*Handles threads*/
     pthread_t hLeituraSDCD, hLeituraPIMS, hCapturaDados, hCapturaAlarmes;
