@@ -52,6 +52,16 @@
 */
 
 /* ======================================================================================================================== */
+/*  INTRUCOES PARA UTILIZACAO DA BIBLIOTECA CHECKFORERROR*/
+/*
+    Para que a biblioteca CheckForError funcione corretamente e necessario tomar alguns cuidados
+
+    1.  No Visual studio Comunity Edition selecione
+        Project -> Properties -> Configuration Properties -> C/C++ -> Language
+        Em "Conformance Mode" selecione a opcao "No(/permissive)"
+*/
+
+/* ======================================================================================================================== */
 /*  DEFINE AREA*/
 
 #define HAVE_STRUCT_TIMESPEC
