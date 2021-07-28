@@ -141,25 +141,25 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Criando eventos*/
-    hEventKeyS      = CreateEvent(NULL, FALSE, FALSE, "KeyS");
+    hEventKeyS      = CreateEvent(NULL, FALSE, FALSE, L"KeyS");
     CheckForError(hEventKeyS);
 
-    hEventKeyP      = CreateEvent(NULL, FALSE, FALSE, "KeyP");
+    hEventKeyP      = CreateEvent(NULL, FALSE, FALSE, L"KeyP");
     CheckForError(hEventKeyP);
 
-    hEventKeyD      = CreateEvent(NULL, FALSE, FALSE, "KeyD");
+    hEventKeyD      = CreateEvent(NULL, FALSE, FALSE, L"KeyD");
     CheckForError(hEventKeyD);
 
-    hEventKeyA      = CreateEvent(NULL, FALSE, FALSE, "KeyA");
+    hEventKeyA      = CreateEvent(NULL, FALSE, FALSE, L"KeyA");
     CheckForError(hEventKeyA);
 
-    hEventKeyO      = CreateEvent(NULL, FALSE, FALSE, "KeyO");
+    hEventKeyO      = CreateEvent(NULL, FALSE, FALSE, L"KeyO");
     CheckForError(hEventKeyO);
 
-    hEventKeyC      = CreateEvent(NULL, FALSE, FALSE, "KeyC");
+    hEventKeyC      = CreateEvent(NULL, FALSE, FALSE, L"KeyC");
     CheckForError(hEventKeyC);
 
-    hEventKeyEsc    = CreateEvent(NULL, FALSE, FALSE, "KeyEsc");
+    hEventKeyEsc    = CreateEvent(NULL, FALSE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
 
@@ -234,29 +234,36 @@ int main() {
         switch (key) {
         case 's':
         case 'S':
+            SetEvent(hEventKeyS);
             printf("Voce digitou a tecla S\n");
             break;
         case 'p':
         case 'P':
+            SetEvent(hEventKeyP);
             printf("Voce digitou a tecla P\n");
             break;
         case 'd':
         case 'D':
+            SetEvent(hEventKeyD);
             printf("Voce digitou a tecla D\n");
             break;
         case 'a':
         case 'A':
+            SetEvent(hEventKeyA);
             printf("Voce digitou a tecla A\n");
             break;
         case 'o':
         case 'O':
+            SetEvent(hEventKeyO);
             printf("Voce digitou a tecla O\n");
             break;
         case 'c':
         case 'C':
+            SetEvent(hEventKeyC);
             printf("Voce digitou a tecla C\n");
             break;
         case ESC_KEY:
+            SetEvent(hEventKeyEsc);
             printf("Voce digitou a tecla esc\n");
             break;
         default:
