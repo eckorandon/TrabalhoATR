@@ -112,6 +112,10 @@ int     p_ocup = 0, p_livre = 0;
 HANDLE hMutexBuffer;
 
 /* ======================================================================================================================== */
+/*  HANDLE EVENTOS*/
+HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc;
+
+/* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
 /*  CRIACAO DAS THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
 /*  TAREFA DE LEITURA DO TECLADO*/
@@ -134,6 +138,30 @@ int main() {
     /*Criando mutex*/
     hMutexBuffer = CreateMutex(NULL, FALSE, L"MutexBuffer");
     CheckForError(hMutexBuffer);
+
+    /*------------------------------------------------------------------------------*/
+    /*Criando eventos*/
+    hEventKeyS      = CreateEvent(NULL, FALSE, FALSE, "KeyS");
+    CheckForError(hEventKeyS);
+
+    hEventKeyP      = CreateEvent(NULL, FALSE, FALSE, "KeyP");
+    CheckForError(hEventKeyP);
+
+    hEventKeyD      = CreateEvent(NULL, FALSE, FALSE, "KeyD");
+    CheckForError(hEventKeyD);
+
+    hEventKeyA      = CreateEvent(NULL, FALSE, FALSE, "KeyA");
+    CheckForError(hEventKeyA);
+
+    hEventKeyO      = CreateEvent(NULL, FALSE, FALSE, "KeyO");
+    CheckForError(hEventKeyO);
+
+    hEventKeyC      = CreateEvent(NULL, FALSE, FALSE, "KeyC");
+    CheckForError(hEventKeyC);
+
+    hEventKeyEsc    = CreateEvent(NULL, FALSE, FALSE, "KeyEsc");
+    CheckForError(hEventKeyEsc);
+
 
     /*------------------------------------------------------------------------------*/
     /*Handles threads*/
