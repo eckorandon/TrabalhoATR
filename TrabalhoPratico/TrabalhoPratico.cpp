@@ -115,6 +115,11 @@ int     p_ocup = 0, p_livre = 0;
 HANDLE hMutexBuffer;
 
 /* ======================================================================================================================== */
+/*  HANDLE SEMAFOROS*/
+
+HANDLE hSemLivre, hSemOcupado;
+
+/* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
 HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc;
@@ -143,26 +148,34 @@ int main() {
     CheckForError(hMutexBuffer);
 
     /*------------------------------------------------------------------------------*/
+    /*Criando objetos do tipo semaforo*/
+    hSemLivre = CreateSemaphore(NULL, RAM, RAM, L"SemLivre");
+    CheckForError(hSemLivre);
+
+    hSemOcupado = CreateSemaphore(NULL, 0, RAM, L"SemOcupado");
+    CheckForError(hSemOcupado);
+
+    /*------------------------------------------------------------------------------*/
     /*Criando objetos do tipo eventos*/
-    hEventKeyS      = CreateEvent(NULL, FALSE, FALSE, L"KeyS");
+    hEventKeyS = CreateEvent(NULL, FALSE, FALSE, L"KeyS");
     CheckForError(hEventKeyS);
 
-    hEventKeyP      = CreateEvent(NULL, FALSE, FALSE, L"KeyP");
+    hEventKeyP = CreateEvent(NULL, FALSE, FALSE, L"KeyP");
     CheckForError(hEventKeyP);
 
-    hEventKeyD      = CreateEvent(NULL, FALSE, FALSE, L"KeyD");
+    hEventKeyD = CreateEvent(NULL, FALSE, FALSE, L"KeyD");
     CheckForError(hEventKeyD);
 
-    hEventKeyA      = CreateEvent(NULL, FALSE, FALSE, L"KeyA");
+    hEventKeyA = CreateEvent(NULL, FALSE, FALSE, L"KeyA");
     CheckForError(hEventKeyA);
 
-    hEventKeyO      = CreateEvent(NULL, FALSE, FALSE, L"KeyO");
+    hEventKeyO = CreateEvent(NULL, FALSE, FALSE, L"KeyO");
     CheckForError(hEventKeyO);
 
-    hEventKeyC      = CreateEvent(NULL, FALSE, FALSE, L"KeyC");
+    hEventKeyC = CreateEvent(NULL, FALSE, FALSE, L"KeyC");
     CheckForError(hEventKeyC);
 
-    hEventKeyEsc    = CreateEvent(NULL, FALSE, FALSE, L"KeyEsc");
+    hEventKeyEsc = CreateEvent(NULL, FALSE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
     /*------------------------------------------------------------------------------*/
@@ -291,10 +304,15 @@ int main() {
     CloseHandle(hEventKeyO);
     CloseHandle(hEventKeyC);
     CloseHandle(hEventKeyEsc);
+    CloseHandle(hSemLivre);
+    CloseHandle(hSemOcupado);
+
+    //Fechar threads, processos e esse
 
     /*------------------------------------------------------------------------------*/
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return EXIT_SUCCESS;
+
 } /*fim da funcao main*/
 
 /* ======================================================================================================================== */
@@ -308,13 +326,13 @@ int main() {
     [X] Mutex na RAM e p_livre
     [X] Imprimir estados
     [ ] Finalizar thread quando Esc e apertado
-    [ ] Bloquear quando nao tiver posicao disponivel na RAM
+    [X] Bloquear quando nao tiver posicao disponivel na RAM
     [ ] Alertar quando a memoria esta cheia  no terminal main
-    [ ] Continuar quando tiver uma posicao disponivel na RAM
+    [X] Continuar quando tiver uma posicao disponivel na RAM
 */
 
 void* LeituraSDCD(void* arg) {
-
+    /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais LeituraSDCD()*/
     int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0;
@@ -327,19 +345,28 @@ void* LeituraSDCD(void* arg) {
     
     DWORD   ret;
 
+    /*------------------------------------------------------------------------------*/
+
     while (true) {
-
-        /*Gerando valores aleatorios para os campos referentes ao SDCD e gravando-os em memoria*/
         for (i = 1; i < 1000000; ++i) {
-
+            /*------------------------------------------------------------------------------*/
             /*Bloqueio e desbloqueio da thread LeituraSDCD*/
             ret = WaitForSingleObject(hEventKeyS, 1);
+            GetLastError();
+
             nTipoEvento = ret - WAIT_OBJECT_0;
+
             if (nTipoEvento == 0) {
-                printf("BLOQUEADO - Thread Leitura SDCD\n");
+                printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
+
                 ret = WaitForSingleObject(hEventKeyS, INFINITE);
-                printf("DESBLOQUEADO - Thread Leitura SDCD\n");
+                GetLastError();
+
+                printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
             }
+
+            /*------------------------------------------------------------------------------*/
+            /*Gerando valores aleatorios para os campos referentes ao SDCD e gravando-os em memoria*/
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
             for (int j = 0; j < 6; j++) {
@@ -439,12 +466,16 @@ void* LeituraSDCD(void* arg) {
                 l++;
             }
 
+            /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria*/
+
+            /*Esperando o semaforo de espacos livres*/
+            WaitForSingleObject(hSemLivre, INFINITE);
+            GetLastError();
+
+            /*Conquistando o mutex da secao critica*/
             status = WaitForSingleObject(hMutexBuffer, INFINITE);
-            if (((p_livre+1) % RAM) == p_ocup) {
-                printf("MEMORIA CHEIA\n");
-                //esperar posicao livre
-            }
+            GetLastError();
      
             for (int j = 0; j < 52; j++) {
                 RamBuffer[p_livre][j] = SDCD[j];
@@ -472,9 +503,19 @@ void* LeituraSDCD(void* arg) {
             /*Movendo a posicao de livre para o proximo slot da memoria circular*/
             p_livre = (p_livre + 1) % RAM;
 
+            if (p_livre == p_ocup) {
+                printf("MEMORIA CHEIA\n");
+            }
+
             /*Liberando o mutex da secao critica*/
             status = ReleaseMutex(hMutexBuffer);
+            GetLastError();
 
+            /*Liberando o semaforo de espacos ocupados*/
+            ReleaseSemaphore(hSemOcupado, 1, NULL);
+            GetLastError();
+
+            /*------------------------------------------------------------------------------*/
             /*Delay em milisegundos antes do fim do laco for*/
             Sleep(1000);
 
@@ -499,12 +540,14 @@ void* LeituraSDCD(void* arg) {
     [X] Mutex na RAM e p_livre
     [X] Imprimir estados
     [ ] Finalizar thread quando Esc é apertado
-    [ ] Bloquear quando nao tiver posicao disponivel na RAM
+    [X] Bloquear quando nao tiver posicao disponivel na RAM
     [ ] Alertar quando a memoria esta cheia no terminal main
-    [ ] Continuar quando tiver uma posicao disponivel na RAM
+    [X] Continuar quando tiver uma posicao disponivel na RAM
 */
 
 void* LeituraPIMS(void* arg) {
+    /*------------------------------------------------------------------------------*/
+    /*Declarando variaveis locais LeituraPIMS()*/
     int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0, randon = 0, critico = 0;
 
@@ -513,18 +556,24 @@ void* LeituraPIMS(void* arg) {
 
     DWORD   ret;
 
+    /*------------------------------------------------------------------------------*/
+
     while (true) {
-
         for (i = 1; i < 1000000; ++i) {
-
+            /*------------------------------------------------------------------------------*/
             /*Bloqueio e desbloqueio da thread LeituraPIMS*/
             ret = WaitForSingleObject(hEventKeyP, 1);
+            GetLastError();
             nTipoEvento = ret - WAIT_OBJECT_0;
             if (nTipoEvento == 0) {
-                printf("BLOQUEADO - Thread Leitura PIMS\n");
+                printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura PIMS\n");
                 ret = WaitForSingleObject(hEventKeyP, INFINITE);
-                printf("DESBLOQUEADO - Thread Leitura PIMS\n");
+                GetLastError();
+                printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura PIMS\n");
             }
+
+            /*------------------------------------------------------------------------------*/
+            /*Gerando valores aleatorios para os campos referentes ao PIMS e gravando apenas os de tipo 2 em memoria*/
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
             for (int j = 0; j < 6; j++) {
@@ -606,13 +655,19 @@ void* LeituraPIMS(void* arg) {
                 l++;
             }
 
+            /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria*/
+            //if (((p_livre+1) % RAM) == p_ocup) {printf("MEMORIA CHEIA\n");}
+
+            /*Esperando o semaforo de espacos livres*/
+            WaitForSingleObject(hSemLivre, INFINITE);
+            GetLastError();
+
+            /*Conquistando o mutex da secao critica*/
             status = WaitForSingleObject(hMutexBuffer, INFINITE);
+            GetLastError();
+
             if (critico == 2) {
-                if (((p_livre + 1) % RAM) == p_ocup) {
-                    printf("MEMORIA CHEIA\n");
-                    //esperar esvaziar
-                }
 
                 for (int j = 0; j < 31; j++) {
                     RamBuffer[p_livre][j] = PIMS[j];
@@ -620,6 +675,10 @@ void* LeituraPIMS(void* arg) {
 
                 /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                 p_livre = (p_livre + 1) % RAM;
+
+                if (p_livre == p_ocup) {
+                    printf("MEMORIA CHEIA\n");
+                }
             }
             else {
                 /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
@@ -628,6 +687,11 @@ void* LeituraPIMS(void* arg) {
 
             /*Liberando o mutex da secao critica*/
             status = ReleaseMutex(hMutexBuffer);
+            GetLastError();
+
+            /*Liberando o semaforo de espacos ocupados*/
+            ReleaseSemaphore(hSemOcupado, 1, NULL);
+            GetLastError();
 
             /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
             /*
@@ -648,6 +712,7 @@ void* LeituraPIMS(void* arg) {
                 printf("\n");
             */
 
+            /*------------------------------------------------------------------------------*/
             /*Delay em milisegundos antes do fim do laco for*/
             Sleep(1000);
 
@@ -674,7 +739,7 @@ void* LeituraPIMS(void* arg) {
 */
 
 void* CapturaDados(void* arg) {
-
+    /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais CapturaDados()*/
     int     index = (int)arg, status, i, nTipoEvento;
 
@@ -682,37 +747,58 @@ void* CapturaDados(void* arg) {
 
     DWORD   ret;
 
-    while (true) {
+    /*------------------------------------------------------------------------------*/
 
+    while (true) {
+        /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaDados*/
         ret = WaitForSingleObject(hEventKeyD, 1);
+        GetLastError();
+
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Thread Captura de dados do processo\n");
+            printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Captura de dados do processo\n");
             ret = WaitForSingleObject(hEventKeyD, INFINITE);
-            printf("DESBLOQUEADO - Thread Captura de dados do processo\n");
+            GetLastError();
+            printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Captura de dados do processo\n");
         }
 
+        /*------------------------------------------------------------------------------*/
         /*Leitura dos dados gerados em memoria*/
+
+        /*Esperando o semaforo de espacos ocupados*/
+        WaitForSingleObject(hSemOcupado, INFINITE);
+        GetLastError();
+
+        /*Conquistando o mutex da secao critica*/
         status = WaitForSingleObject(hMutexBuffer, INFINITE);
-        if (p_ocup != p_livre) {
-            if (RamBuffer[p_ocup][7] == '1') {
-                for (int j = 0; j < 52; j++) {
-                    SDCD[j] = RamBuffer[p_ocup][j];
-                }
+        GetLastError();
 
-                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                p_ocup = (p_ocup + 1) % RAM;
+        if (RamBuffer[p_ocup][7] == '1') {
+            for (int j = 0; j < 52; j++) {
+                SDCD[j] = RamBuffer[p_ocup][j];
+            }
 
-                for (int j = 0; j < 52; j++) {
-                    printf("%c", SDCD[j]);
-                }
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+            p_ocup = (p_ocup + 1) % RAM;
+
+            printf("\x1b[33m");
+            
+            for (int j = 0; j < 52; j++) {
+                printf("%c", SDCD[j]);
+            }
                 printf("\n");
             }
-        }
+
+            printf("\x1b[0m");
 
         /*Liberando o mutex da secao critica*/
         status = ReleaseMutex(hMutexBuffer);
+        GetLastError();
+
+        /*Liberando o semaforo de espacos livres*/
+        ReleaseSemaphore(hSemLivre, 1, NULL);
+        GetLastError();
 
     } /*fim do while*/
 
@@ -736,7 +822,7 @@ void* CapturaDados(void* arg) {
 */
 
 void* CapturaAlarmes(void* arg) {
-
+    /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais CapturaDados()*/
     int     index = (int)arg, status, i, nTipoEvento;
 
@@ -744,35 +830,57 @@ void* CapturaAlarmes(void* arg) {
 
     DWORD   ret;
 
-    while (true) {
+    /*------------------------------------------------------------------------------*/
 
+    while (true) {
+        /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaAlarmes*/
         ret = WaitForSingleObject(hEventKeyA, 1);
+        GetLastError();
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Thread Captura de alarmes\n");
+            printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Captura de alarmes\n");
             ret = WaitForSingleObject(hEventKeyA, INFINITE);
-            printf("DESBLOQUEADO - Thread Captura alarmes\n");
+            GetLastError();
+            printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Captura alarmes\n");
         }
 
+        /*------------------------------------------------------------------------------*/
         /*Leitura dos dados gerados em memoria*/
+        
+        /*Esperando o semaforo de espacos ocupados*/
+        WaitForSingleObject(hSemOcupado, INFINITE);
+        GetLastError();
+
+        /*Conquistando o mutex da secao critica*/
         status = WaitForSingleObject(hMutexBuffer, INFINITE);
-        if (p_ocup != p_livre) {
-            if (RamBuffer[p_ocup][7] == '2') {
-                for (int j = 0; j < 31; j++) {
-                    PIMS[j] = RamBuffer[p_ocup][j];
-                }
+        GetLastError();
 
-                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                p_ocup = (p_ocup + 1) % RAM;
-
-                for (int j = 0; j < 31; j++) {
-                    printf("%c", PIMS[j]);
-                }
-                printf("\n");
+        if (RamBuffer[p_ocup][7] == '2') {
+            for (int j = 0; j < 31; j++) {
+                PIMS[j] = RamBuffer[p_ocup][j];
             }
+
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+            p_ocup = (p_ocup + 1) % RAM;
+
+            printf("\x1b[34m");
+
+            for (int j = 0; j < 31; j++) {
+                printf("%c", PIMS[j]);
+            }
+            printf("\n");
         }
+
+        printf("\x1b[0m");
+        
+        /*Liberando o mutex da secao critica*/
         status = ReleaseMutex(hMutexBuffer);
+        GetLastError();
+
+        /*Liberando o semaforo de espacos livres*/
+        ReleaseSemaphore(hSemLivre, 1, NULL);
+        GetLastError();
 
     } /*fim do while*/
 
