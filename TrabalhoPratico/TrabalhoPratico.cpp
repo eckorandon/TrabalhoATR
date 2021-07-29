@@ -332,9 +332,9 @@ void* LeituraSDCD(void* arg) {
             ret = WaitForSingleObject(hEventKeyS, 1);
             nTipoEvento = ret - WAIT_OBJECT_0;
             if (nTipoEvento == 0) {
-                printf("Thread Leitura SDCD bloqueada\n");
+                printf("BLOQUEADO - Thread Leitura SDCD\n");
                 ret = WaitForSingleObject(hEventKeyS, INFINITE);
-                printf("Thread Leitura SDCD desbloqueada\n");
+                printf("DESBLOQUEADO - Thread Leitura SDCD\n");
             }
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
@@ -513,9 +513,9 @@ void* LeituraPIMS(void* arg) {
             ret = WaitForSingleObject(hEventKeyP, 1);
             nTipoEvento = ret - WAIT_OBJECT_0;
             if (nTipoEvento == 0) {
-                printf("Thread Leitura PIMS bloqueada\n");
+                printf("BLOQUEADO - Thread Leitura PIMS\n");
                 ret = WaitForSingleObject(hEventKeyP, INFINITE);
-                printf("Thread Leitura PIMS desbloqueada\n");
+                printf("DESBLOQUEADO - Thread Leitura PIMS\n");
             }
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
@@ -679,9 +679,9 @@ void* CapturaDados(void* arg) {
         ret = WaitForSingleObject(hEventKeyD, 1);
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
-            printf("Thread Captura de dados do processo bloqueada\n");
+            printf("BLOQUEADO - Thread Captura de dados do processo\n");
             ret = WaitForSingleObject(hEventKeyD, INFINITE);
-            printf("Thread Captura de dados do processo desbloqueada\n");
+            printf("DESBLOQUEADO - Thread Captura de dados do processo\n");
         }
 
         /*Leitura dos dados gerados em memoria*/
@@ -740,9 +740,9 @@ void* CapturaAlarmes(void* arg) {
         ret = WaitForSingleObject(hEventKeyA, 1);
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
-            printf("Thread Captura de alarmes bloqueada\n");
+            printf("BLOQUEADO - Thread Captura de alarmes\n");
             ret = WaitForSingleObject(hEventKeyA, INFINITE);
-            printf("Thread Captura de alarmes desbloqueada\n");
+            printf("DESBLOQUEADO - Thread Captura alarmes\n");
         }
 
         /*Leitura dos dados gerados em memoria*/
