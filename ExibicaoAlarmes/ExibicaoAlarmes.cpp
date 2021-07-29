@@ -93,11 +93,13 @@ int main() {
 
         /*Bloqueio e desbloqueio do processo de exibicao de alarmes*/
         ret = WaitForSingleObject(hEventKeyC, 1);
+        GetLastError();
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Processo de exibicao de alarmes\n");
+            printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Processo de exibicao de alarmes\n");
             ret = WaitForSingleObject(hEventKeyC, INFINITE);
-            printf("DESBLOQUEADO - Processo de exibicao de alarmes\n");
+            GetLastError();
+            printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Processo de exibicao de alarmes\n");
         }
 
         /*PARA TESTES ============= Imprime as menssagems do PIMS ============= PARA TESTES*/
