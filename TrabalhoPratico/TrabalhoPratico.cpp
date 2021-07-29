@@ -435,40 +435,40 @@ void* LeituraSDCD(void* arg) {
                 l++;
             }
 
-            status = WaitForSingleObject(hMutexBuffer, INFINITE);
             /*Gravacao dos dados gerados em memoria*/
+            status = WaitForSingleObject(hMutexBuffer, INFINITE);
             if (((p_livre+1) % RAM) == p_ocup) {
-                //bloqueia e alerta fato
-                printf("memoria cheia\n");
-                Sleep(2000);
+                printf("MEMORIA CHEIA\n");
+                //esperar posicao livre
             }
-            else {
+     
+            for (int j = 0; j < 52; j++) {
+                RamBuffer[p_livre][j] = SDCD[j];
+            }
+
+            /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
+            /*
+                printf("Thread %d ", index);
+
+                printf("SDCD\n");
                 for (int j = 0; j < 52; j++) {
-                    RamBuffer[p_livre][j] = SDCD[j];
+                    printf("%c", SDCD[j]);
                 }
 
-                /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
-                /*
-                    printf("Thread %d ", index);
+                printf("\n");
 
-                    printf("SDCD\n");
-                    for (int j = 0; j < 52; j++) {
-                       printf("%c", SDCD[j]);
-                    }
+                printf("RAM -> p_livre = %d\n", p_livre);
+                for (int j = 0; j < 52; j++) {
+                    printf("%c", RamBuffer[p_livre][j]);
+                }
 
-                    printf("\n");
+                printf("\n");
+            */
 
-                    printf("RAM -> p_livre = %d\n", p_livre);
-                    for (int j = 0; j < 52; j++) {
-                        printf("%c", RamBuffer[p_livre][j]);
-                    }
+            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+            p_livre = (p_livre + 1) % RAM;
 
-                    printf("\n");
-                */
-
-                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                p_livre = (p_livre + 1) % RAM;
-            }
+            /*Liberando o mutex da secao critica*/
             status = ReleaseMutex(hMutexBuffer);
 
             /*Delay em milisegundos antes do fim do laco for*/
@@ -600,24 +600,25 @@ void* LeituraPIMS(void* arg) {
 
             /*Gravacao dos dados gerados em memoria*/
             status = WaitForSingleObject(hMutexBuffer, INFINITE);
-            if (((p_livre + 1) % RAM) == p_ocup) {
-                //bloqueia e alerta fato
-                printf("memoria cheia\n");
-                Sleep(2000);
+            if (critico == 2) {
+                if (((p_livre + 1) % RAM) == p_ocup) {
+                    printf("MEMORIA CHEIA\n");
+                    //esperar esvaziar
+                }
+
+                for (int j = 0; j < 31; j++) {
+                    RamBuffer[p_livre][j] = PIMS[j];
+                }
+
+                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                p_livre = (p_livre + 1) % RAM;
             }
             else {
-                if (critico == 2) {
-                    for (int j = 0; j < 31; j++) {
-                        RamBuffer[p_livre][j] = PIMS[j];
-                    }
-
-                    /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                    p_livre = (p_livre + 1) % RAM;
-                }
-                else {
-                    /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
-                }
+                /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
+                /*A ser implementado na Etapa 2 do trabalho*/
             }
+
+            /*Liberando o mutex da secao critica*/
             status = ReleaseMutex(hMutexBuffer);
 
             /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
@@ -683,13 +684,9 @@ void* CapturaDados(void* arg) {
             printf("Thread Captura de dados do processo desbloqueada\n");
         }
 
+        /*Leitura dos dados gerados em memoria*/
         status = WaitForSingleObject(hMutexBuffer, INFINITE);
-        if (p_ocup == p_livre) {
-            //bloqueia e alerta fato???
-            printf("memoria vazia\n");
-            Sleep(5000);
-        }
-        else {
+        if (p_ocup != p_livre) {
             if (RamBuffer[p_ocup][7] == '1') {
                 for (int j = 0; j < 52; j++) {
                     SDCD[j] = RamBuffer[p_ocup][j];
@@ -704,6 +701,8 @@ void* CapturaDados(void* arg) {
                 printf("\n");
             }
         }
+
+        /*Liberando o mutex da secao critica*/
         status = ReleaseMutex(hMutexBuffer);
 
     } /*fim do while*/
@@ -746,13 +745,9 @@ void* CapturaAlarmes(void* arg) {
             printf("Thread Captura de alarmes desbloqueada\n");
         }
 
+        /*Leitura dos dados gerados em memoria*/
         status = WaitForSingleObject(hMutexBuffer, INFINITE);
-        if (p_ocup == p_livre) {
-            //bloqueia e alerta fato ???
-            printf("memoria vazia\n");
-            Sleep(5000);
-        }
-        else {
+        if (p_ocup != p_livre) {
             if (RamBuffer[p_ocup][7] == '2') {
                 for (int j = 0; j < 31; j++) {
                     PIMS[j] = RamBuffer[p_ocup][j];
