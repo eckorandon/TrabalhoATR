@@ -22,6 +22,18 @@
 */
 
 /* ======================================================================================================================== */
+/*  INTRUCOES PARA UTILIZACAO DA BIBLIOTECA CHECKFORERROR*/
+/*
+    Para que a biblioteca CheckForError funcione corretamente e necessario tomar alguns cuidados
+
+    1.  No Visual studio Comunity Edition selecione
+        Project -> Properties -> Configuration Properties -> C/C++ -> Language
+        Em "Conformance Mode" selecione a opcao "No(/permissive)".
+
+    2.  Repita o mesmo passo para todos os processos de uma mesma solucao.
+*/
+
+/* ======================================================================================================================== */
 /*  DEFINE AREA*/
 
 #define WIN32_LEAN_AND_MEAN
@@ -38,6 +50,11 @@
 #include "CheckForError.h"                                                     /*CheckForError()*/
 
 /* ======================================================================================================================== */
+/*  HANDLE EVENTOS*/
+
+HANDLE hEventKeyO, hEventKeyEsc;
+
+/* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE DADOS DO PROCESSO*/
 /*  QUANDO SINALIZADA PELA TAREFA DE CAPTURA DE DADOS RETIRA MENSSAGENS DE DADOS DE PROCESSO DO ARQUIVO*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
@@ -52,6 +69,8 @@ int main() {
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
+    int     nTipoEvento;
+
     char    SDCD[76] = { 'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', ' ', 
                          'H', 'O', 'R', 'A', ':', 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', '.', 'M', 'S', 'S', ' ',
                          'T', 'A', 'G', ':', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', ' ',
@@ -59,7 +78,27 @@ int main() {
                          'U', 'E', ':', '#', '#', '#', '#', '#', '#', '#', '#', ' ', 
                          'M', 'O', 'D', 'O', ':', '#' };
 
+    DWORD   ret;
+
+    /*------------------------------------------------------------------------------*/
+    /*Abrindo eventos*/
+    hEventKeyO = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyO");
+    CheckForError(hEventKeyO);
+
+    hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
+    CheckForError(hEventKeyEsc);
+
+    /*------------------------------------------------------------------------------*/
     while (true) {
+
+        /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
+        ret = WaitForSingleObject(hEventKeyO, 1);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+        if (nTipoEvento == 0) {
+            printf("BLOQUEADO - Processo de exibicao de dados\n");
+            ret = WaitForSingleObject(hEventKeyO, INFINITE);
+            printf("DESBLOQUEADO - Processo de exibicao de dados\n");
+        }
 
         /*PARA TESTES ============= Imprime as menssagems do SDCD ============= PARA TESTES*/
         /*

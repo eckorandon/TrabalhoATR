@@ -58,7 +58,9 @@
 
     1.  No Visual studio Comunity Edition selecione
         Project -> Properties -> Configuration Properties -> C/C++ -> Language
-        Em "Conformance Mode" selecione a opcao "No(/permissive)"
+        Em "Conformance Mode" selecione a opcao "No(/permissive)".
+
+    2.  Repita o mesmo passo para todos os processos de uma mesma solucao.
 */
 
 /* ======================================================================================================================== */
@@ -109,10 +111,12 @@ int     p_ocup = 0, p_livre = 0;
 
 /* ======================================================================================================================== */
 /*  HANDLE MUTEX*/
+
 HANDLE hMutexBuffer;
 
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
+
 HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc;
 
 /* ======================================================================================================================== */
@@ -124,9 +128,8 @@ HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, h
     [X] Criacao de threads
     [X] Criacao de processos
     [ ] Tratar inputs do teclado
+    [ ] Fechar threads e processos
 */
-
-// ATENCAO FALTA COLOCAR CHECKFORERROR DEU ERRO QUANDO EU COLOQUEI A FUNCAO
 
 int main() {
     /*------------------------------------------------------------------------------*/
@@ -161,7 +164,6 @@ int main() {
 
     hEventKeyEsc    = CreateEvent(NULL, FALSE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
-
 
     /*------------------------------------------------------------------------------*/
     /*Handles threads*/
@@ -235,35 +237,42 @@ int main() {
         case 's':
         case 'S':
             SetEvent(hEventKeyS);
+            GetLastError();
             printf("Voce digitou a tecla S\n");
             break;
         case 'p':
         case 'P':
             SetEvent(hEventKeyP);
+            GetLastError();
             printf("Voce digitou a tecla P\n");
             break;
         case 'd':
         case 'D':
             SetEvent(hEventKeyD);
+            GetLastError();
             printf("Voce digitou a tecla D\n");
             break;
         case 'a':
         case 'A':
             SetEvent(hEventKeyA);
+            GetLastError();
             printf("Voce digitou a tecla A\n");
             break;
         case 'o':
         case 'O':
             SetEvent(hEventKeyO);
+            GetLastError();
             printf("Voce digitou a tecla O\n");
             break;
         case 'c':
         case 'C':
             SetEvent(hEventKeyC);
+            GetLastError();
             printf("Voce digitou a tecla C\n");
             break;
         case ESC_KEY:
             SetEvent(hEventKeyEsc);
+            GetLastError();
             printf("Voce digitou a tecla esc\n");
             break;
         default:
@@ -275,6 +284,13 @@ int main() {
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(hMutexBuffer);
+    CloseHandle(hEventKeyS);
+    CloseHandle(hEventKeyP);
+    CloseHandle(hEventKeyD);
+    CloseHandle(hEventKeyA);
+    CloseHandle(hEventKeyO);
+    CloseHandle(hEventKeyC);
+    CloseHandle(hEventKeyEsc);
 
     /*------------------------------------------------------------------------------*/
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
@@ -296,7 +312,7 @@ int main() {
 void* LeituraSDCD(void* arg) {
 
     /*Declarando variaveis locais LeituraSDCD()*/
-    int     index = (int)arg, status,
+    int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0;
 
     char    SDCD[52], UE[9] = "        ", AM[3] = "AM",
@@ -304,11 +320,22 @@ void* LeituraSDCD(void* arg) {
             Unidade[11][9]{ "kg      ", "kg/m^2  ", "A       ", "V       ", "T       ", "Nm      ",
                             "m       ", "kgf     ", "N       ", "m/s     ", "m/s^2   " },
             Hora[3], Minuto[3], Segundo[3], MiliSegundo[4];
+    
+    DWORD   ret;
 
     while (true) {
 
         /*Gerando valores aleatorios para os campos referentes ao SDCD e gravando-os em memoria*/
         for (i = 1; i < 1000000; ++i) {
+
+            /*Bloqueio e desbloqueio da thread LeituraSDCD*/
+            ret = WaitForSingleObject(hEventKeyS, 1);
+            nTipoEvento = ret - WAIT_OBJECT_0;
+            if (nTipoEvento == 0) {
+                printf("Thread Leitura SDCD bloqueada\n");
+                ret = WaitForSingleObject(hEventKeyS, INFINITE);
+                printf("Thread Leitura SDCD desbloqueada\n");
+            }
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
             for (int j = 0; j < 6; j++) {
@@ -413,7 +440,7 @@ void* LeituraSDCD(void* arg) {
             if (((p_livre+1) % RAM) == p_ocup) {
                 //bloqueia e alerta fato
                 printf("memoria cheia\n");
-                Sleep(5000);
+                Sleep(2000);
             }
             else {
                 for (int j = 0; j < 52; j++) {
@@ -445,7 +472,7 @@ void* LeituraSDCD(void* arg) {
             status = ReleaseMutex(hMutexBuffer);
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(1000);
+            Sleep(100);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -470,15 +497,26 @@ void* LeituraSDCD(void* arg) {
 */
 
 void* LeituraPIMS(void* arg) {
-    int     index = (int)arg, status,
+    int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0, randon = 0, critico = 0;
 
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
 
+    DWORD   ret;
+
     while (true) {
 
         for (i = 1; i < 1000000; ++i) {
+
+            /*Bloqueio e desbloqueio da thread LeituraPIMS*/
+            ret = WaitForSingleObject(hEventKeyP, 1);
+            nTipoEvento = ret - WAIT_OBJECT_0;
+            if (nTipoEvento == 0) {
+                printf("Thread Leitura PIMS bloqueada\n");
+                ret = WaitForSingleObject(hEventKeyP, INFINITE);
+                printf("Thread Leitura PIMS desbloqueada\n");
+            }
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
             for (int j = 0; j < 6; j++) {
@@ -565,7 +603,7 @@ void* LeituraPIMS(void* arg) {
             if (((p_livre + 1) % RAM) == p_ocup) {
                 //bloqueia e alerta fato
                 printf("memoria cheia\n");
-                Sleep(5000);
+                Sleep(2000);
             }
             else {
                 if (critico == 2) {
@@ -602,7 +640,7 @@ void* LeituraPIMS(void* arg) {
             */
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(1000);
+            Sleep(100);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -628,11 +666,22 @@ void* LeituraPIMS(void* arg) {
 void* CapturaDados(void* arg) {
 
     /*Declarando variaveis locais CapturaDados()*/
-    int     index = (int)arg, status, i;
+    int     index = (int)arg, status, i, nTipoEvento;
 
     char    SDCD[52];
 
+    DWORD   ret;
+
     while (true) {
+
+        /*Bloqueio e desbloqueio da thread CapturaDados*/
+        ret = WaitForSingleObject(hEventKeyD, 1);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+        if (nTipoEvento == 0) {
+            printf("Thread Captura de dados do processo bloqueada\n");
+            ret = WaitForSingleObject(hEventKeyD, INFINITE);
+            printf("Thread Captura de dados do processo desbloqueada\n");
+        }
 
         status = WaitForSingleObject(hMutexBuffer, INFINITE);
         if (p_ocup == p_livre) {
@@ -680,11 +729,22 @@ void* CapturaDados(void* arg) {
 void* CapturaAlarmes(void* arg) {
 
     /*Declarando variaveis locais CapturaDados()*/
-    int     index = (int)arg, status, i;
+    int     index = (int)arg, status, i, nTipoEvento;
 
     char    PIMS[31];
 
+    DWORD   ret;
+
     while (true) {
+
+        /*Bloqueio e desbloqueio da thread CapturaAlarmes*/
+        ret = WaitForSingleObject(hEventKeyA, 1);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+        if (nTipoEvento == 0) {
+            printf("Thread Captura de alarmes bloqueada\n");
+            ret = WaitForSingleObject(hEventKeyA, INFINITE);
+            printf("Thread Captura de alarmes desbloqueada\n");
+        }
 
         status = WaitForSingleObject(hMutexBuffer, INFINITE);
         if (p_ocup == p_livre) {

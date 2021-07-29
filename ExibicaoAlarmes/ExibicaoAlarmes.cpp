@@ -22,6 +22,18 @@
 */
 
 /* ======================================================================================================================== */
+/*  INTRUCOES PARA UTILIZACAO DA BIBLIOTECA CHECKFORERROR*/
+/*
+    Para que a biblioteca CheckForError funcione corretamente e necessario tomar alguns cuidados
+
+    1.  No Visual studio Comunity Edition selecione
+        Project -> Properties -> Configuration Properties -> C/C++ -> Language
+        Em "Conformance Mode" selecione a opcao "No(/permissive)".
+
+    2.  Repita o mesmo passo para todos os processos de uma mesma solucao.
+*/
+
+/* ======================================================================================================================== */
 /*  DEFINE AREA*/
 
 #define WIN32_LEAN_AND_MEAN
@@ -36,6 +48,11 @@
 #include <stdlib.h>
 #include <conio.h>		                                                       /*_getch()*/
 #include "CheckForError.h"                                                     /*CheckForError()*/
+
+/* ======================================================================================================================== */
+/*  HANDLE EVENTOS*/
+
+HANDLE hEventKeyC, hEventKeyEsc;
 
 /* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE ALARMES*/
@@ -53,13 +70,34 @@ int main() {
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
+    int     nTipoEvento;
+
     char    PIMS[54] = { 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', ' ', 
                          'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', '#', '#', ' ', 
                          'I', 'D', ' ', 'A', 'L', 'A', 'R', 'M', 'E', ':', '#', '#', '#', '#', ' ',
                          'G', 'R', 'A', 'U', ':', '#', '#', ' ', 
                          'P', 'R', 'E', 'V', ':', '#', '#', '#', '#', '#' };
 
+    DWORD   ret;
+
+    /*------------------------------------------------------------------------------*/
+    /*Abrindo eventos*/
+    hEventKeyC = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyC");
+    CheckForError(hEventKeyC);
+
+    hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
+    CheckForError(hEventKeyEsc);
+
     while (true) {
+
+        /*Bloqueio e desbloqueio do processo de exibicao de alarmes*/
+        ret = WaitForSingleObject(hEventKeyC, 1);
+        nTipoEvento = ret - WAIT_OBJECT_0;
+        if (nTipoEvento == 0) {
+            printf("BLOQUEADO - Processo de exibicao de alarmes\n");
+            ret = WaitForSingleObject(hEventKeyC, INFINITE);
+            printf("DESBLOQUEADO - Processo de exibicao de alarmes\n");
+        }
 
         /*PARA TESTES ============= Imprime as menssagems do PIMS ============= PARA TESTES*/
         /*
