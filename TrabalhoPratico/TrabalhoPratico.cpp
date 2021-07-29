@@ -134,16 +134,16 @@ HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, h
 int main() {
     /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais main()*/
-    int i, status;
-    char key;
+    int     i, status;
+    char    key;
     
     /*------------------------------------------------------------------------------*/
-    /*Criando mutex*/
+    /*Criando objetos do tipo mutex*/
     hMutexBuffer = CreateMutex(NULL, FALSE, L"MutexBuffer");
     CheckForError(hMutexBuffer);
 
     /*------------------------------------------------------------------------------*/
-    /*Criando eventos*/
+    /*Criando objetos do tipo eventos*/
     hEventKeyS      = CreateEvent(NULL, FALSE, FALSE, L"KeyS");
     CheckForError(hEventKeyS);
 
