@@ -305,8 +305,12 @@ int main() {
     TAREFAS
     [X] Geracao de valores aleatorio
     [X] Gravacao em memoria RAM
-    [-] Tratamento quando a lista esta cheia
     [X] Mutex na RAM e p_livre
+    [X] Imprimir estados
+    [ ] Finalizar thread quando Esc e apertado
+    [ ] Bloquear quando nao tiver posicao disponivel na RAM
+    [ ] Alertar quando a memoria esta cheia  no terminal main
+    [ ] Continuar quando tiver uma posicao disponivel na RAM
 */
 
 void* LeituraSDCD(void* arg) {
@@ -472,7 +476,7 @@ void* LeituraSDCD(void* arg) {
             status = ReleaseMutex(hMutexBuffer);
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(100);
+            Sleep(1000);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -491,9 +495,13 @@ void* LeituraSDCD(void* arg) {
 /*
     TAREFAS
     [X] Geracao de valores aleatorio
-    [X] Gravacao em memoria RAM apenas dos alarmes nao criticos
-    [-] Tratamento quando a lista esta cheia
+    [X] Gravacao em memoria RAM
     [X] Mutex na RAM e p_livre
+    [X] Imprimir estados
+    [ ] Finalizar thread quando Esc é apertado
+    [ ] Bloquear quando nao tiver posicao disponivel na RAM
+    [ ] Alertar quando a memoria esta cheia no terminal main
+    [ ] Continuar quando tiver uma posicao disponivel na RAM
 */
 
 void* LeituraPIMS(void* arg) {
@@ -641,7 +649,7 @@ void* LeituraPIMS(void* arg) {
             */
 
             /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(100);
+            Sleep(1000);
 
         } /*fim do for*/
     } /*fim do while*/
@@ -661,7 +669,8 @@ void* LeituraPIMS(void* arg) {
     [X] Capturar dados da RAM e armazena temporariamente
     [X] Imprimir menssagens na console principal
     [X] Mutex na RAM e p_ocupado
-    [ ] Imprimir estados
+    [X] Imprimir estados
+    [ ] Finalizar thread quando Esc é apertado
 */
 
 void* CapturaDados(void* arg) {
@@ -719,10 +728,11 @@ void* CapturaDados(void* arg) {
 /*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 /*
     TAREFAS
-    [X] Capturar dados da RAM de alarmes nao criticos e armazena temporariamente
+    [X] Capturar dados da RAM e armazena temporariamente
     [X] Imprimir menssagens na console principal
     [X] Mutex na RAM e p_ocupado
-    [ ] Imprimir estados
+    [X] Imprimir estados
+    [ ] Finalizar thread quando Esc é apertado
 */
 
 void* CapturaAlarmes(void* arg) {

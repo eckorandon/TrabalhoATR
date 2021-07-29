@@ -60,7 +60,8 @@ HANDLE hEventKeyO, hEventKeyEsc;
 /*  EXIBE AS MESMAS NO TERMINAL*/
 /*
     TAREFAS
-    [ ] Mostrar estados bloqueio/desbloqueio
+    [X] Imprimir estados
+    [ ] Finalizar thread quando Esc é apertado
 */
 
 int main() {
