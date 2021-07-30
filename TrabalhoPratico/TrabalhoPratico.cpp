@@ -290,7 +290,6 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
-    CloseHandle(hMutexBuffer);
     CloseHandle(hEventKeyS);
     CloseHandle(hEventKeyP);
     CloseHandle(hEventKeyD);
@@ -300,11 +299,11 @@ int main() {
     CloseHandle(hEventKeyEsc);
     CloseHandle(hSemLivre);
     CloseHandle(hSemOcupado);
+    CloseHandle(hMutexBuffer);
 
     /*------------------------------------------------------------------------------*/
     printf("Finalizando funcao principal\n");
-    Sleep(5000);
-    system("PAUSE");
+    Sleep(2000);
     return EXIT_SUCCESS;
 
 } /*fim da funcao main*/
@@ -330,20 +329,20 @@ void* LeituraSDCD(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyS, hEventKeyEsc };
+    HANDLE Events[2] = { hEventKeyS, hEventKeyEsc },
+           SemLivre[2] = { hSemLivre, hEventKeyEsc },
+           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
             /*------------------------------------------------------------------------------*/
-            /*Condição para termino da thread*/
-            if (key == ESC_KEY) {
-                break;
-            }
+            /*Condicao para termino da thread*/
+            if (key == ESC_KEY) break;
 
             /*------------------------------------------------------------------------------*/
             /*Bloqueio e desbloqueio da thread LeituraSDCD*/
-            ret = WaitForSingleObject(hEventKeyS, 1);
+            ret = WaitForMultipleObjects(2, Events, FALSE, 1);
             GetLastError();
 
             nTipoEvento = ret - WAIT_OBJECT_0;
@@ -351,10 +350,18 @@ void* LeituraSDCD(void* arg) {
             if (nTipoEvento == 0) {
                 printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
 
-                ret = WaitForSingleObject(hEventKeyS, INFINITE);
+                ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
                 GetLastError();
 
+                nTipoEvento = ret - WAIT_OBJECT_0;
+
                 printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
+            }
+
+            /*Condicao para termino do processo*/
+            if (nTipoEvento == 1) {
+                key = ESC_KEY;
+                break;
             }
 
             /*------------------------------------------------------------------------------*/
@@ -459,53 +466,55 @@ void* LeituraSDCD(void* arg) {
             }
 
             /*------------------------------------------------------------------------------*/
+            /*Condicao para termino da thread*/
+            if (key == ESC_KEY) break;
+
+            /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria*/
 
             /*Esperando o semaforo de espacos livres*/
-            WaitForSingleObject(hSemLivre, INFINITE);
+            ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
             GetLastError();
 
-            /*Conquistando o mutex da secao critica*/
-            status = WaitForSingleObject(hMutexBuffer, INFINITE);
-            GetLastError();
-     
-            for (int j = 0; j < 52; j++) {
-                RamBuffer[p_livre][j] = SDCD[j];
+            nTipoEvento = ret - WAIT_OBJECT_0;
+
+            /*Condição para termino do processo*/
+            if (nTipoEvento == 1) {
+                key = ESC_KEY;
+                break;
             }
+            else {
+                /*Conquistando o mutex da secao critica*/
+                ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, 1);
+                GetLastError();
 
-            /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
-            /*
-                printf("Thread %d ", index);
+                nTipoEvento = ret - WAIT_OBJECT_0;
 
-                printf("SDCD\n");
-                for (int j = 0; j < 52; j++) {
-                    printf("%c", SDCD[j]);
+                if (nTipoEvento == 1) {
+                    key = ESC_KEY;
+                    break;
                 }
+                else {
+                    for (int j = 0; j < 52; j++) {
+                        RamBuffer[p_livre][j] = SDCD[j];
+                    }
 
-                printf("\n");
+                    /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                    p_livre = (p_livre + 1) % RAM;
 
-                printf("RAM -> p_livre = %d\n", p_livre);
-                for (int j = 0; j < 52; j++) {
-                    printf("%c", RamBuffer[p_livre][j]);
+                    if (p_livre == p_ocup) {
+                        printf("MEMORIA CHEIA\n");
+                    }
+
+                    /*Liberando o mutex da secao critica*/
+                    status = ReleaseMutex(hMutexBuffer);
+                    GetLastError();
+
+                    /*Liberando o semaforo de espacos ocupados*/
+                    ReleaseSemaphore(hSemOcupado, 1, NULL);
+                    GetLastError();
                 }
-
-                printf("\n");
-            */
-
-            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-            p_livre = (p_livre + 1) % RAM;
-
-            if (p_livre == p_ocup) {
-                printf("MEMORIA CHEIA\n");
             }
-
-            /*Liberando o mutex da secao critica*/
-            status = ReleaseMutex(hMutexBuffer);
-            GetLastError();
-
-            /*Liberando o semaforo de espacos ocupados*/
-            ReleaseSemaphore(hSemOcupado, 1, NULL);
-            GetLastError();
 
             /*------------------------------------------------------------------------------*/
             /*Delay em milisegundos antes do fim do laco for*/
@@ -513,6 +522,12 @@ void* LeituraSDCD(void* arg) {
 
         } /*fim do for*/
     } /*fim do while*/
+
+    /*------------------------------------------------------------------------------*/
+    /*Fechando handles*/
+    CloseHandle(MutexBuffer);
+    CloseHandle(SemLivre);
+    CloseHandle(Events);
 
     /*------------------------------------------------------------------------------*/
     printf("Finalizando thread de leitura do SDCD\n");
@@ -728,6 +743,12 @@ void* LeituraPIMS(void* arg) {
     printf("Finalizando thread de leitura do PIMS\n");
     pthread_exit((void*)index);
 
+    /*------------------------------------------------------------------------------*/
+    /*Fechando handles*/
+    CloseHandle(MutexBuffer);
+    CloseHandle(SemLivre);
+    CloseHandle(Events);
+
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
 }
@@ -831,6 +852,12 @@ void* CapturaDados(void* arg) {
     } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/
+    /*Fechando handles*/
+    CloseHandle(MutexBuffer);
+    CloseHandle(SemOcupado);
+    CloseHandle(Events);
+
+    /*------------------------------------------------------------------------------*/
     printf("Finalizando thread de captura de dados do processo\n");
     pthread_exit((void*)index);
 
@@ -839,7 +866,7 @@ void* CapturaDados(void* arg) {
 }
 
 /* ======================================================================================================================== */
-/*  THREAD SECUNDARIA DE CAPTURA DE ALARMES
+/*  THREAD SECUNDARIA DE CAPTURA DE ALARMES*/
 /*  RETIRA AS MENSSAGENS DE ALARMES NAO CRITICOS EM MEMORIA*/
 /*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 
@@ -934,6 +961,12 @@ void* CapturaAlarmes(void* arg) {
             }
         }
     } /*fim do while*/
+
+    /*------------------------------------------------------------------------------*/
+    /*Fechando handles*/
+    CloseHandle(MutexBuffer);
+    CloseHandle(SemOcupado);
+    CloseHandle(Events);
 
     /*------------------------------------------------------------------------------*/
     printf("Finalizando thread de captura de alarmes\n");
