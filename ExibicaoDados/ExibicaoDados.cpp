@@ -40,6 +40,9 @@
 
 #define _CHECKERROR	    1				                                       /*Ativa funcao CheckForError*/
 
+/*Codigo ASCII para a tecla esc*/
+#define	ESC_KEY			27
+
 /* ======================================================================================================================== */
 /*  INCLUDE AREA*/
 
@@ -70,7 +73,7 @@ int main() {
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
-    int     nTipoEvento;
+    int     nTipoEvento, key = 0;
 
     char    SDCD[76] = { 'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', ' ', 
                          'H', 'O', 'R', 'A', ':', 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', '.', 'M', 'S', 'S', ' ',
@@ -90,8 +93,19 @@ int main() {
     CheckForError(hEventKeyEsc);
 
     /*------------------------------------------------------------------------------*/
-    while (true) {
+    while (key != ESC_KEY) {
+        /*------------------------------------------------------------------------------*/
+        /*Condição para termino do processo*/
+        ret = WaitForSingleObject(hEventKeyEsc, 1);
+        GetLastError();
 
+        nTipoEvento = ret - WAIT_OBJECT_0;
+
+        if (nTipoEvento == 0) {
+            key = ESC_KEY;
+        }
+
+        /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
         ret = WaitForSingleObject(hEventKeyO, 1);
         GetLastError();
@@ -117,6 +131,8 @@ int main() {
         */
     }
 
-    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
-    return (0);
+    /*------------------------------------------------------------------------------*/
+    printf("Finalizando processo de exibicao de dados\n");
+    system("PAUSE");
+    return EXIT_SUCCESS;
 }

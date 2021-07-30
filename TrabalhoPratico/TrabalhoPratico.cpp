@@ -103,8 +103,8 @@ void* CapturaAlarmes(void* arg);
 /* ======================================================================================================================== */
 /*  DECLARACAO DAS VARIAVEIS GLOBAIS*/
 
-/*Espaco destinado a lista circular na memoria RAM*/
-char    RamBuffer[RAM][52];
+/*Espaco destinado a lista circular na memoria RAM e tecla de input*/
+char    RamBuffer[RAM][52], key;
 
 /*Variaveis de controle das posicoes na lista circular*/
 int     p_ocup = 0, p_livre = 0;
@@ -140,7 +140,6 @@ int main() {
     /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais main()*/
     int     i, status;
-    char    key;
     
     /*------------------------------------------------------------------------------*/
     /*Criando objetos do tipo mutex*/
@@ -175,7 +174,7 @@ int main() {
     hEventKeyC = CreateEvent(NULL, FALSE, FALSE, L"KeyC");
     CheckForError(hEventKeyC);
 
-    hEventKeyEsc = CreateEvent(NULL, FALSE, FALSE, L"KeyEsc");
+    hEventKeyEsc = CreateEvent(NULL, TRUE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
     /*------------------------------------------------------------------------------*/
@@ -244,7 +243,7 @@ int main() {
     
     /*------------------------------------------------------------------------------*/
     /*Tratando inputs do teclado*/
-    while (TRUE) {
+    while (key != ESC_KEY) {
         key = _getch();
         switch (key) {
         case 's':
@@ -307,10 +306,10 @@ int main() {
     CloseHandle(hSemLivre);
     CloseHandle(hSemOcupado);
 
-    //Fechar threads, processos e esse
-
     /*------------------------------------------------------------------------------*/
-    /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
+    printf("Finalizando funcao principal\n");
+    Sleep(10000);
+    system("PAUSE");
     return EXIT_SUCCESS;
 
 } /*fim da funcao main*/
@@ -336,8 +335,14 @@ void* LeituraSDCD(void* arg) {
 
     /*------------------------------------------------------------------------------*/
 
-    while (true) {
+    while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
+            /*------------------------------------------------------------------------------*/
+            /*Condição para termino da thread*/
+            if (key == ESC_KEY) {
+                break;
+            }
+
             /*------------------------------------------------------------------------------*/
             /*Bloqueio e desbloqueio da thread LeituraSDCD*/
             ret = WaitForSingleObject(hEventKeyS, 1);
@@ -511,6 +516,8 @@ void* LeituraSDCD(void* arg) {
         } /*fim do for*/
     } /*fim do while*/
 
+    /*------------------------------------------------------------------------------*/
+    printf("Finalizando thread de leitura do SDCD\n");
     pthread_exit((void*)index);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
@@ -536,8 +543,14 @@ void* LeituraPIMS(void* arg) {
 
     /*------------------------------------------------------------------------------*/
 
-    while (true) {
+    while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
+            /*------------------------------------------------------------------------------*/
+            /*Condição para termino da thread*/
+            if (key == ESC_KEY) {
+                break;
+            }
+
             /*------------------------------------------------------------------------------*/
             /*Bloqueio e desbloqueio da thread LeituraPIMS*/
             ret = WaitForSingleObject(hEventKeyP, 1);
@@ -697,6 +710,8 @@ void* LeituraPIMS(void* arg) {
         } /*fim do for*/
     } /*fim do while*/
 
+    /*------------------------------------------------------------------------------*/
+    printf("Finalizando thread de leitura do PIMS\n");
     pthread_exit((void*)index);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
@@ -719,7 +734,7 @@ void* CapturaDados(void* arg) {
 
     /*------------------------------------------------------------------------------*/
 
-    while (true) {
+    while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaDados*/
         ret = WaitForSingleObject(hEventKeyD, 1);
@@ -728,8 +743,10 @@ void* CapturaDados(void* arg) {
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
             printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Captura de dados do processo\n");
+
             ret = WaitForSingleObject(hEventKeyD, INFINITE);
             GetLastError();
+
             printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Captura de dados do processo\n");
         }
 
@@ -772,6 +789,8 @@ void* CapturaDados(void* arg) {
 
     } /*fim do while*/
 
+    /*------------------------------------------------------------------------------*/
+    printf("Finalizando thread de captura de dados do processo\n");
     pthread_exit((void*)index);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
@@ -794,16 +813,19 @@ void* CapturaAlarmes(void* arg) {
 
     /*------------------------------------------------------------------------------*/
 
-    while (true) {
+    while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaAlarmes*/
         ret = WaitForSingleObject(hEventKeyA, 1);
         GetLastError();
+
         nTipoEvento = ret - WAIT_OBJECT_0;
         if (nTipoEvento == 0) {
             printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Captura de alarmes\n");
+
             ret = WaitForSingleObject(hEventKeyA, INFINITE);
             GetLastError();
+
             printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Captura alarmes\n");
         }
 
@@ -846,6 +868,8 @@ void* CapturaAlarmes(void* arg) {
 
     } /*fim do while*/
 
+    /*------------------------------------------------------------------------------*/
+    printf("Finalizando thread de captura de alarmes\n");
     pthread_exit((void*)index);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
