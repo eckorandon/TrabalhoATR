@@ -61,11 +61,6 @@ HANDLE hEventKeyO, hEventKeyEsc;
 /*  TAREFA DE EXIBICAO DE DADOS DO PROCESSO*/
 /*  QUANDO SINALIZADA PELA TAREFA DE CAPTURA DE DADOS RETIRA MENSSAGENS DE DADOS DE PROCESSO DO ARQUIVO*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
-/*
-    TAREFAS
-    [X] Imprimir estados
-    [ ] Finalizar thread quando Esc é apertado
-*/
 
 int main() {
     /*Nomeando o terminal do processo*/
@@ -92,33 +87,31 @@ int main() {
     hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
+    HANDLE Events[2] = {hEventKeyO, hEventKeyEsc};
+
     /*------------------------------------------------------------------------------*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
-        /*Condição para termino do processo*/
-        ret = WaitForSingleObject(hEventKeyEsc, 1);
-        GetLastError();
-
-        nTipoEvento = ret - WAIT_OBJECT_0;
-
-        if (nTipoEvento == 0) {
-            key = ESC_KEY;
-        }
-
-        /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
-        ret = WaitForSingleObject(hEventKeyO, 1);
+        ret = WaitForMultipleObjects(2, Events, FALSE, 1);
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
 
         if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Processo de exibicao de dados\n");
+            printf("BLOQUEADO - Processo de exibicao de alarmes\n");
             
-            ret = WaitForSingleObject(hEventKeyO, INFINITE);
+            ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
             GetLastError();
 
-            printf("DESBLOQUEADO - Processo de exibicao de dados\n");
+            nTipoEvento = ret - WAIT_OBJECT_0;
+
+            printf("DESBLOQUEADO - Processo de exibicao alarmes\n");
+        }
+
+        /*Condição para termino do processo*/
+        if (nTipoEvento == 1) {
+            key = ESC_KEY;
         }
 
         /*PARA TESTES ============= Imprime as menssagems do SDCD ============= PARA TESTES*/

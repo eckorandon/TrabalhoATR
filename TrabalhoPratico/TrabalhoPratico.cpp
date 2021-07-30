@@ -308,7 +308,7 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     printf("Finalizando funcao principal\n");
-    Sleep(10000);
+    Sleep(5000);
     system("PAUSE");
     return EXIT_SUCCESS;
 
@@ -857,7 +857,7 @@ void* CapturaAlarmes(void* arg) {
         }
 
         printf("\x1b[0m");
-        
+
         /*Liberando o mutex da secao critica*/
         status = ReleaseMutex(hMutexBuffer);
         GetLastError();

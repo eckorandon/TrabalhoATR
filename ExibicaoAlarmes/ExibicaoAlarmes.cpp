@@ -62,11 +62,6 @@ HANDLE hEventKeyC, hEventKeyEsc;
 /*  RECEBE MENSSAGENS DE ALARMES CRITICOS (9) DA TAREFA DE CAPTURA DE ALARMESE*/
 /*  RECEBE MENSSAGENS DE ALARMES NAO CRITICOS (2) DA TAREFA DE LEITURA DO PIMS*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
-/*
-    TAREFAS
-    [X] Imprimir estados
-    [ ] Finalizar thread quando Esc é apertado
-*/
 
 int main() {
     /*Nomeando o terminal do processo*/
@@ -92,33 +87,31 @@ int main() {
     hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
+    HANDLE Events[2] = {hEventKeyC, hEventKeyEsc};
+
     /*------------------------------------------------------------------------------*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
-        /*Condição para termino do processo*/
-        ret = WaitForSingleObject(hEventKeyEsc, 1);
+        /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
+        ret = WaitForMultipleObjects(2, Events, FALSE, 1);
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
 
         if (nTipoEvento == 0) {
-            key = ESC_KEY;
-        }
+            printf("BLOQUEADO - Processo de exibicao de dados\n");
 
-        /*------------------------------------------------------------------------------*/
-        /*Bloqueio e desbloqueio do processo de exibicao de alarmes*/
-        ret = WaitForSingleObject(hEventKeyC, 1);
-        GetLastError();
-
-        nTipoEvento = ret - WAIT_OBJECT_0;
-
-        if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Processo de exibicao de alarmes\n");
-
-            ret = WaitForSingleObject(hEventKeyC, INFINITE);
+            ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
             GetLastError();
 
-            printf("DESBLOQUEADO - Processo de exibicao de alarmes\n");
+            nTipoEvento = ret - WAIT_OBJECT_0;
+
+            printf("DESBLOQUEADO - Processo de exibicao de dados\n");
+        }
+
+        /*Condição para termino do processo*/
+        if (nTipoEvento == 1) {
+            key = ESC_KEY;
         }
 
         /*PARA TESTES ============= Imprime as menssagems do PIMS ============= PARA TESTES*/
