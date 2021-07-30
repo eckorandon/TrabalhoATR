@@ -735,7 +735,9 @@ void* CapturaDados(void* arg) {
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyD, hEventKeyEsc };
+    HANDLE Events[2] = { hEventKeyD, hEventKeyEsc },
+           SemOcupado[2] = { hSemOcupado, hEventKeyEsc },
+           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
 
@@ -767,40 +769,52 @@ void* CapturaDados(void* arg) {
         /*Leitura dos dados gerados em memoria*/
 
         /*Esperando o semaforo de espacos ocupados*/
-        WaitForSingleObject(hSemOcupado, INFINITE);
+        ret = WaitForMultipleObjects(2, SemOcupado, FALSE, 1);
         GetLastError();
 
-        /*Conquistando o mutex da secao critica*/
-        status = WaitForSingleObject(hMutexBuffer, INFINITE);
-        GetLastError();
+        nTipoEvento = ret - WAIT_OBJECT_0;
 
-        if (RamBuffer[p_ocup][7] == '1') {
-            for (int j = 0; j < 52; j++) {
-                SDCD[j] = RamBuffer[p_ocup][j];
-            }
-
-            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-            p_ocup = (p_ocup + 1) % RAM;
-
-            printf("\x1b[33m");
-            
-            for (int j = 0; j < 52; j++) {
-                printf("%c", SDCD[j]);
-            }
-
-            printf("\x1b[0m\n");
+        /*Condição para termino do processo*/
+        if (nTipoEvento == 1) {
+            key = ESC_KEY;
         }
+        else {
+            /*Conquistando o mutex da secao critica*/
+            ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, 1);
+            GetLastError();
 
-            
+            nTipoEvento = ret - WAIT_OBJECT_0;
 
-        /*Liberando o mutex da secao critica*/
-        status = ReleaseMutex(hMutexBuffer);
-        GetLastError();
+            if (nTipoEvento == 1) {
+                key = ESC_KEY;
+            }
+            else {
+                if (RamBuffer[p_ocup][7] == '1') {
+                    for (int j = 0; j < 52; j++) {
+                        SDCD[j] = RamBuffer[p_ocup][j];
+                    }
 
-        /*Liberando o semaforo de espacos livres*/
-        ReleaseSemaphore(hSemLivre, 1, NULL);
-        GetLastError();
+                    /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                    p_ocup = (p_ocup + 1) % RAM;
 
+                    printf("\x1b[33m");
+
+                    for (int j = 0; j < 52; j++) {
+                        printf("%c", SDCD[j]);
+                    }
+
+                    printf("\x1b[0m\n");
+                }
+
+                /*Liberando o mutex da secao critica*/
+                status = ReleaseMutex(hMutexBuffer);
+                GetLastError();
+
+                /*Liberando o semaforo de espacos livres*/
+                ReleaseSemaphore(hSemLivre, 1, NULL);
+                GetLastError();
+            }
+        }
     } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/
