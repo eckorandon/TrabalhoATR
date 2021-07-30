@@ -541,27 +541,39 @@ void* LeituraPIMS(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyP, hEventKeyEsc };
+    HANDLE Events[2] = { hEventKeyP, hEventKeyEsc },
+           SemLivre[2] = { hSemLivre, hEventKeyEsc },
+           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
             /*------------------------------------------------------------------------------*/
-            /*Condição para termino da thread*/
-            if (key == ESC_KEY) {
-                break;
-            }
+            /*Condicao para termino da thread*/
+            if (key == ESC_KEY) break;
 
             /*------------------------------------------------------------------------------*/
             /*Bloqueio e desbloqueio da thread LeituraPIMS*/
-            ret = WaitForSingleObject(hEventKeyP, 1);
+            ret = WaitForMultipleObjects(2, Events, FALSE, 1);
             GetLastError();
+
             nTipoEvento = ret - WAIT_OBJECT_0;
+
             if (nTipoEvento == 0) {
                 printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura PIMS\n");
-                ret = WaitForSingleObject(hEventKeyP, INFINITE);
+
+                ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
                 GetLastError();
+
+                nTipoEvento = ret - WAIT_OBJECT_0;
+
                 printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura PIMS\n");
+            }
+
+            /*Condicao para termino do processo*/
+            if (nTipoEvento == 1) {
+                key = ESC_KEY;
+                break;
             }
 
             /*------------------------------------------------------------------------------*/
@@ -648,61 +660,62 @@ void* LeituraPIMS(void* arg) {
             }
 
             /*------------------------------------------------------------------------------*/
+            /*Condicao para termino da thread*/
+            if (key == ESC_KEY) break;
+
+            /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria*/
-            //if (((p_livre+1) % RAM) == p_ocup) {printf("MEMORIA CHEIA\n");}
 
             /*Esperando o semaforo de espacos livres*/
-            WaitForSingleObject(hSemLivre, INFINITE);
+            ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
             GetLastError();
 
-            /*Conquistando o mutex da secao critica*/
-            status = WaitForSingleObject(hMutexBuffer, INFINITE);
-            GetLastError();
+            nTipoEvento = ret - WAIT_OBJECT_0;
 
-            if (critico == 2) {
-
-                for (int j = 0; j < 31; j++) {
-                    RamBuffer[p_livre][j] = PIMS[j];
-                }
-
-                /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                p_livre = (p_livre + 1) % RAM;
-
-                if (p_livre == p_ocup) {
-                    printf("MEMORIA CHEIA\n");
-                }
+            /*Condição para termino do processo*/
+            if (nTipoEvento == 1) {
+                key = ESC_KEY;
+                break;
             }
             else {
-                /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
-                /*A ser implementado na Etapa 2 do trabalho*/
-            }
+                /*Conquistando o mutex da secao critica*/
+                ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, 1);
+                GetLastError();
 
-            /*Liberando o mutex da secao critica*/
-            status = ReleaseMutex(hMutexBuffer);
-            GetLastError();
+                nTipoEvento = ret - WAIT_OBJECT_0;
 
-            /*Liberando o semaforo de espacos ocupados*/
-            ReleaseSemaphore(hSemOcupado, 1, NULL);
-            GetLastError();
-
-            /*PARA TESTES ============= Imprime as menssagems ============= PARA TESTES*/
-            /*
-                printf("Thread %d ", index);
-
-                printf("PIMS\n");
-                for (int j = 0; j < 31; j++) {
-                   printf("%c", PIMS[j]);
+                if (nTipoEvento == 1) {
+                    key = ESC_KEY;
+                    break;
                 }
+                else {
+                    if (critico == 2) {
 
-                printf("\n");
-                if (critico == 2) {
-                    printf("RAM -> p_livre = %d\n", p_livre);
-                    for (int j = 0; j < 31; j++) {
-                        printf("%c", RamBuffer[p_livre][j]);
+                        for (int j = 0; j < 31; j++) {
+                            RamBuffer[p_livre][j] = PIMS[j];
+                        }
+
+                        /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                        p_livre = (p_livre + 1) % RAM;
+
+                        if (p_livre == p_ocup) {
+                            printf("MEMORIA CHEIA\n");
+                        }
                     }
+                    else {
+                        /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
+                        /*A ser implementado na Etapa 2 do trabalho*/
+                    }
+
+                    /*Liberando o mutex da secao critica*/
+                    status = ReleaseMutex(hMutexBuffer);
+                    GetLastError();
+
+                    /*Liberando o semaforo de espacos ocupados*/
+                    ReleaseSemaphore(hSemOcupado, 1, NULL);
+                    GetLastError();
                 }
-                printf("\n");
-            */
+            }
 
             /*------------------------------------------------------------------------------*/
             /*Delay em milisegundos antes do fim do laco for*/
@@ -760,7 +773,7 @@ void* CapturaDados(void* arg) {
             printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Captura de dados do processo\n");
         }
 
-        /*Condição para termino do processo*/
+        /*Condicao para termino do processo*/
         if (nTipoEvento == 1) {
             key = ESC_KEY;
         }
@@ -866,7 +879,7 @@ void* CapturaAlarmes(void* arg) {
             printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Captura alarmes\n");
         }
 
-        /*Condição para termino do processo*/
+        /*Condicao para termino do processo*/
         if (nTipoEvento == 1) {
             key = ESC_KEY;
         }
