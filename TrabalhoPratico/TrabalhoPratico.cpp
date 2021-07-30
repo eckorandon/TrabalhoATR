@@ -319,17 +319,6 @@ int main() {
 /*  THREAD SECUNDARIA DE LEITURA SDCD*/
 /*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DE DADOS DO SDCD*/
 /*  GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA*/
-/*
-    TAREFAS
-    [X] Geracao de valores aleatorio
-    [X] Gravacao em memoria RAM
-    [X] Mutex na RAM e p_livre
-    [X] Imprimir estados
-    [ ] Finalizar thread quando Esc e apertado
-    [X] Bloquear quando nao tiver posicao disponivel na RAM
-    [ ] Alertar quando a memoria esta cheia  no terminal main
-    [X] Continuar quando tiver uma posicao disponivel na RAM
-*/
 
 void* LeituraSDCD(void* arg) {
     /*------------------------------------------------------------------------------*/
@@ -532,18 +521,7 @@ void* LeituraSDCD(void* arg) {
 /*  THREAD SECUNDARIA DE LEITURA PIMS*/
 /*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DO PIMS*/
 /*  GRAVACAO DOS ALARMES NAO CRITICOS NA LISTA CIRCULAR EM MEMORIA*/
-/*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES*/
-/*
-    TAREFAS
-    [X] Geracao de valores aleatorio
-    [X] Gravacao em memoria RAM
-    [X] Mutex na RAM e p_livre
-    [X] Imprimir estados
-    [ ] Finalizar thread quando Esc é apertado
-    [X] Bloquear quando nao tiver posicao disponivel na RAM
-    [ ] Alertar quando a memoria esta cheia no terminal main
-    [X] Continuar quando tiver uma posicao disponivel na RAM
-*/
+/*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES - ETAPA 2*/
 
 void* LeituraPIMS(void* arg) {
     /*------------------------------------------------------------------------------*/
@@ -729,14 +707,6 @@ void* LeituraPIMS(void* arg) {
 /*  THREAD SECUNDARIA DE CAPTURA DE DADOS DO PROCESSO*/
 /*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO*/
 /*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
-/*
-    TAREFAS
-    [X] Capturar dados da RAM e armazena temporariamente
-    [X] Imprimir menssagens na console principal
-    [X] Mutex na RAM e p_ocupado
-    [X] Imprimir estados
-    [ ] Finalizar thread quando Esc é apertado
-*/
 
 void* CapturaDados(void* arg) {
     /*------------------------------------------------------------------------------*/
@@ -812,14 +782,6 @@ void* CapturaDados(void* arg) {
 /*  THREAD SECUNDARIA DE CAPTURA DE ALARMES
 /*  RETIRA AS MENSSAGENS DE ALARMES NAO CRITICOS EM MEMORIA*/
 /*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
-/*
-    TAREFAS
-    [X] Capturar dados da RAM e armazena temporariamente
-    [X] Imprimir menssagens na console principal
-    [X] Mutex na RAM e p_ocupado
-    [X] Imprimir estados
-    [ ] Finalizar thread quando Esc é apertado
-*/
 
 void* CapturaAlarmes(void* arg) {
     /*------------------------------------------------------------------------------*/

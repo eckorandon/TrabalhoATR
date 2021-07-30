@@ -95,12 +95,16 @@ int main() {
         /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
         ret = WaitForSingleObject(hEventKeyO, 1);
         GetLastError();
+
         nTipoEvento = ret - WAIT_OBJECT_0;
+
         if (nTipoEvento == 0) {
-            printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Processo de exibicao de dados\n");
+            printf("BLOQUEADO - Processo de exibicao de dados\n");
+            
             ret = WaitForSingleObject(hEventKeyO, INFINITE);
             GetLastError();
-            printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Processo de exibicao de dados\n");
+
+            printf("DESBLOQUEADO - Processo de exibicao de dados\n");
         }
 
         /*PARA TESTES ============= Imprime as menssagems do SDCD ============= PARA TESTES*/
