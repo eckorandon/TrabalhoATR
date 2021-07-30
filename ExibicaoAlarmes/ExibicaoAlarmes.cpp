@@ -87,7 +87,9 @@ int main() {
     hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
-    HANDLE Events[2] = {hEventKeyC, hEventKeyEsc};
+    /*------------------------------------------------------------------------------*/
+    /*Vetor com handles da tarefa*/
+    HANDLE Events[2] = { hEventKeyC, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
     while (key != ESC_KEY) {

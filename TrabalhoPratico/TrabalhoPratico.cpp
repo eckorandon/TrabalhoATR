@@ -140,6 +140,8 @@ int main() {
     /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais main()*/
     int     i, status;
+
+    DWORD   ret;
     
     /*------------------------------------------------------------------------------*/
     /*Criando objetos do tipo mutex*/
@@ -332,6 +334,10 @@ void* LeituraSDCD(void* arg) {
             Hora[3], Minuto[3], Segundo[3], MiliSegundo[4];
     
     DWORD   ret;
+
+    /*------------------------------------------------------------------------------*/
+    /*Vetor com handles da tarefa*/
+    HANDLE Events[2] = { hEventKeyS, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
 
