@@ -127,7 +127,5 @@ int main() {
     }
 
     /*------------------------------------------------------------------------------*/
-    printf("Finalizando processo de exibicao de alarmes\n");
-    system("PAUSE");
     return EXIT_SUCCESS;
 }
