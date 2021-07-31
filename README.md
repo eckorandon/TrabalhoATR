@@ -51,7 +51,7 @@ INTRUCOES PARA UTILIZACAO DA BIBLIOTECA PTHREAD
 
 INTRUCOES PARA UTILIZACAO DA BIBLIOTECA CHECKFORERROR
 
-Para que a biblioteca CheckForError funcione corretamente e necessario tomar alguns cuidados
+    Para que a biblioteca CheckForError funcione corretamente e necessario tomar alguns cuidados
 
     1.  No Visual studio Comunity Edition selecione
         Project -> Properties -> Configuration Properties -> C/C++ -> Language
