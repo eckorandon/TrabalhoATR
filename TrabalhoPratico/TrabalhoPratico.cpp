@@ -60,7 +60,9 @@
         Project -> Properties -> Configuration Properties -> C/C++ -> Language
         Em "Conformance Mode" selecione a opcao "No(/permissive)".
 
-    2.  Repita o mesmo passo para todos os processos de uma mesma solucao.
+    2.  O arquivo CheckForError.h deve se encontrar dentro da pasta do projeto.
+
+    3.  Repita o mesmo passo para todos os projetos de uma mesma solucao.
 */
 
 /* ======================================================================================================================== */
@@ -71,11 +73,9 @@
 
 #define _CHECKERROR	    1				                                        /*Ativa funcao CheckForError*/
 
-/*Tamanho da lista circular em memoria ram*/
-#define RAM             100
+#define RAM             100                                                     /*Tamanho da lista circular em memoria ram*/
 
-/*Codigo ASCII para a tecla esc*/
-#define	ESC_KEY			27
+#define	ESC_KEY			27                                                      /*Codigo ASCII para a tecla esc*/
 
 /* ======================================================================================================================== */
 /*  INCLUDE AREA*/
@@ -131,7 +131,7 @@ HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, h
 
 int main() {
     /*------------------------------------------------------------------------------*/
-    /*Declarando variaveis locais main()*/
+    /*Declarando variaveis locais da main()*/
     int     i, status;
 
     DWORD   ret;
@@ -173,6 +173,8 @@ int main() {
     CheckForError(hEventKeyEsc);
 
     /*------------------------------------------------------------------------------*/
+    /*Threads*/
+
     /*Handles threads*/
     pthread_t hLeituraSDCD, hLeituraPIMS, hCapturaDados, hCapturaAlarmes;
 
@@ -198,12 +200,14 @@ int main() {
     else printf("Erro na criacao da thread %d! Codigo = %d\n", i, GetLastError());
     
     /*------------------------------------------------------------------------------*/
+    /*Processos*/
+
+    /*Nomeando terminal da thread primaria*/
+    SetConsoleTitle(L"TERMINAL PRINCIPAL");                                    
+
     /*Criando processos filhos*/
     STARTUPINFO si;				                                               /*StartUpInformation para novo processo*/
     PROCESS_INFORMATION NewProcess;	                                           /*Informacoes sobre novo processo criado*/
-
-    /*Nomeando o terminal da thread primaria*/
-    SetConsoleTitle(L"TERMINAL PRINCIPAL");                                    
 
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);	                                                       /*Tamanho da estrutura em bytes*/
@@ -280,10 +284,9 @@ int main() {
         case ESC_KEY:
             SetEvent(hEventKeyEsc);
             GetLastError();
-            printf("Voce digitou a tecla esc\n");
             break;
         default:
-            printf("Voce digitou uma tecla sem funcao\n");
+            printf("Voce digitou uma tecla sem funcao!\n");
             break;
         } /*fim do switch*/
     } /*fim do while*/
@@ -302,7 +305,7 @@ int main() {
     CloseHandle(hMutexBuffer);
 
     /*------------------------------------------------------------------------------*/
-    printf("Finalizando funcao principal\n");
+    printf("Finalizando thread de inputs do teclado\n");
     Sleep(2000);
     return EXIT_SUCCESS;
 
@@ -315,7 +318,7 @@ int main() {
 
 void* LeituraSDCD(void* arg) {
     /*------------------------------------------------------------------------------*/
-    /*Declarando variaveis locais LeituraSDCD()*/
+    /*Declarando variaveis locais do LeituraSDCD()*/
     int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0;
 
@@ -329,11 +332,12 @@ void* LeituraSDCD(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyS, hEventKeyEsc },
-           SemLivre[2] = { hSemLivre, hEventKeyEsc },
-           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
+    HANDLE  Events[2]        = { hEventKeyS, hEventKeyEsc },
+            SemLivre[2]      = { hSemLivre, hEventKeyEsc },
+            MutexBuffer[2]   = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
+    /*Loop de execucao*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
             /*------------------------------------------------------------------------------*/
@@ -365,7 +369,7 @@ void* LeituraSDCD(void* arg) {
             }
 
             /*------------------------------------------------------------------------------*/
-            /*Gerando valores aleatorios para os campos referentes ao SDCD e gravando-os em memoria*/
+            /*Gerando valores aleatorios para os campos referentes ao SDCD*/
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
             for (int j = 0; j < 6; j++) {
@@ -495,6 +499,7 @@ void* LeituraSDCD(void* arg) {
                     break;
                 }
                 else {
+                    /*Gravando dados em memoria RAM*/
                     for (int j = 0; j < 52; j++) {
                         RamBuffer[p_livre][j] = SDCD[j];
                     }
@@ -502,6 +507,8 @@ void* LeituraSDCD(void* arg) {
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_livre = (p_livre + 1) % RAM;
 
+                    /*Quando a memoria estiver cheia a thread ficara bloqueada quando chegar no semaforo
+                    ate que uma posicao livre apareca*/
                     if (p_livre == p_ocup) {
                         printf("MEMORIA CHEIA\n");
                     }
@@ -530,6 +537,7 @@ void* LeituraSDCD(void* arg) {
     CloseHandle(Events);
 
     /*------------------------------------------------------------------------------*/
+    /*Finalizando a thread leitura do SDCD*/
     printf("Finalizando thread de leitura do SDCD\n");
     pthread_exit((void*)index);
 
@@ -545,7 +553,7 @@ void* LeituraSDCD(void* arg) {
 
 void* LeituraPIMS(void* arg) {
     /*------------------------------------------------------------------------------*/
-    /*Declarando variaveis locais LeituraPIMS()*/
+    /*Declarando variaveis locais da funcao LeituraPIMS()*/
     int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0, randon = 0, critico = 0;
 
@@ -556,11 +564,12 @@ void* LeituraPIMS(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyP, hEventKeyEsc },
-           SemLivre[2] = { hSemLivre, hEventKeyEsc },
-           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
+    HANDLE  Events[2]       = { hEventKeyP, hEventKeyEsc },
+            SemLivre[2]     = { hSemLivre, hEventKeyEsc },
+            MutexBuffer[2]  = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
+    /*Loop de execucao*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
             /*------------------------------------------------------------------------------*/
@@ -592,7 +601,7 @@ void* LeituraPIMS(void* arg) {
             }
 
             /*------------------------------------------------------------------------------*/
-            /*Gerando valores aleatorios para os campos referentes ao PIMS e gravando apenas os de tipo 2 em memoria*/
+            /*Gerando valores aleatorios para os campos referentes ao PIMS*/
 
             /*Valores de NSEQ - Numero sequencial de 1 ate 999999*/
             for (int j = 0; j < 6; j++) {
@@ -679,7 +688,7 @@ void* LeituraPIMS(void* arg) {
             if (key == ESC_KEY) break;
 
             /*------------------------------------------------------------------------------*/
-            /*Gravacao dos dados gerados em memoria*/
+            /*Gravacao dos dados gerados em memoria - Apenas os dados de tipo 2 sao gravados*/
 
             /*Esperando o semaforo de espacos livres*/
             ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
@@ -705,7 +714,7 @@ void* LeituraPIMS(void* arg) {
                 }
                 else {
                     if (critico == 2) {
-
+                        /*Gravando dados em memoria RAM*/
                         for (int j = 0; j < 31; j++) {
                             RamBuffer[p_livre][j] = PIMS[j];
                         }
@@ -713,6 +722,8 @@ void* LeituraPIMS(void* arg) {
                         /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                         p_livre = (p_livre + 1) % RAM;
 
+                        /*Quando a memoria estiver cheia a thread ficara bloqueada quando chegar no semaforo
+                        ate que uma posicao livre apareca*/
                         if (p_livre == p_ocup) {
                             printf("MEMORIA CHEIA\n");
                         }
@@ -740,14 +751,15 @@ void* LeituraPIMS(void* arg) {
     } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/
-    printf("Finalizando thread de leitura do PIMS\n");
-    pthread_exit((void*)index);
-
-    /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(MutexBuffer);
     CloseHandle(SemLivre);
     CloseHandle(Events);
+
+    /*------------------------------------------------------------------------------*/
+    /*Finalizando a thread leitura do PIMS*/
+    printf("Finalizando thread de leitura do PIMS\n");
+    pthread_exit((void*)index);
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
@@ -757,10 +769,11 @@ void* LeituraPIMS(void* arg) {
 /*  THREAD SECUNDARIA DE CAPTURA DE DADOS DO PROCESSO*/
 /*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO*/
 /*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
+/*  NA ETAPA 1 E RESPONSAVEL APENAS POR EXIBIR OS VALORES DO SDCD ARMAZENADOS NA MEMORIA NO TERMINAL PRINCIPAL*/
 
 void* CapturaDados(void* arg) {
     /*------------------------------------------------------------------------------*/
-    /*Declarando variaveis locais CapturaDados()*/
+    /*Declarando variaveis locais da funcao de CapturaDados()*/
     int     index = (int)arg, status, i, nTipoEvento;
 
     char    SDCD[52];
@@ -769,12 +782,12 @@ void* CapturaDados(void* arg) {
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyD, hEventKeyEsc },
-           SemOcupado[2] = { hSemOcupado, hEventKeyEsc },
-           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
+    HANDLE Events[2]        = { hEventKeyD, hEventKeyEsc },
+           SemOcupado[2]    = { hSemOcupado, hEventKeyEsc },
+           MutexBuffer[2]   = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
-
+    /*Loop de execucao*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaDados*/
@@ -800,7 +813,7 @@ void* CapturaDados(void* arg) {
         }
 
         /*------------------------------------------------------------------------------*/
-        /*Leitura dos dados gerados em memoria*/
+        /*Leitura dos dados gerados e gravados em memoria do SDCD*/
 
         /*Esperando o semaforo de espacos ocupados*/
         ret = WaitForMultipleObjects(2, SemOcupado, FALSE, 1);
@@ -823,7 +836,9 @@ void* CapturaDados(void* arg) {
                 key = ESC_KEY;
             }
             else {
+                /*Selecao dos dados apenas de tipo 1*/
                 if (RamBuffer[p_ocup][7] == '1') {
+                    /*Lendo dados gravados em memoria*/
                     for (int j = 0; j < 52; j++) {
                         SDCD[j] = RamBuffer[p_ocup][j];
                     }
@@ -831,12 +846,11 @@ void* CapturaDados(void* arg) {
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
 
+                    /*Impressao dos dados lidos no terminal principal com a cor amarela*/
                     printf("\x1b[33m");
-
                     for (int j = 0; j < 52; j++) {
                         printf("%c", SDCD[j]);
                     }
-
                     printf("\x1b[0m\n");
                 }
 
@@ -858,6 +872,7 @@ void* CapturaDados(void* arg) {
     CloseHandle(Events);
 
     /*------------------------------------------------------------------------------*/
+    /*Finalizando a thread de captura de dados do processo*/
     printf("Finalizando thread de captura de dados do processo\n");
     pthread_exit((void*)index);
 
@@ -869,10 +884,11 @@ void* CapturaDados(void* arg) {
 /*  THREAD SECUNDARIA DE CAPTURA DE ALARMES*/
 /*  RETIRA AS MENSSAGENS DE ALARMES NAO CRITICOS EM MEMORIA*/
 /*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
+/*  NA ETAPA 1 E RESPONSAVEL APENAS POR EXIBIR OS VALORES TIPO 2 DO PIMS ARMAZENADOS NA MEMORIA NO TERMINAL PRINCIPAL*/
 
 void* CapturaAlarmes(void* arg) {
     /*------------------------------------------------------------------------------*/
-    /*Declarando variaveis locais CapturaDados()*/
+    /*Declarando variaveis locais da funcao CapturaDados()*/
     int     index = (int)arg, status, i, nTipoEvento;
 
     char    PIMS[31];
@@ -881,12 +897,12 @@ void* CapturaAlarmes(void* arg) {
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyA, hEventKeyEsc }, 
-           SemOcupado[2] = { hSemOcupado, hEventKeyEsc },
-           MutexBuffer[2] = { hMutexBuffer, hEventKeyEsc };
+    HANDLE  Events[2]       = { hEventKeyA, hEventKeyEsc }, 
+            SemOcupado[2]   = { hSemOcupado, hEventKeyEsc },
+            MutexBuffer[2]  = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
-
+    /*Loop de execucao*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaAlarmes*/
@@ -935,7 +951,9 @@ void* CapturaAlarmes(void* arg) {
                 key = ESC_KEY;
             }
             else {
+                /*Selecao dos dados apenas de tipo 1*/
                 if (RamBuffer[p_ocup][7] == '2') {
+                    /*Lendo dados gravados em memoria*/
                     for (int j = 0; j < 31; j++) {
                         PIMS[j] = RamBuffer[p_ocup][j];
                     }
@@ -943,8 +961,8 @@ void* CapturaAlarmes(void* arg) {
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
 
+                    /*Impressao dos dados lidos no terminal principal com a cor azul*/
                     printf("\x1b[34m");
-
                     for (int j = 0; j < 31; j++) {
                         printf("%c", PIMS[j]);
                     }
@@ -969,6 +987,7 @@ void* CapturaAlarmes(void* arg) {
     CloseHandle(Events);
 
     /*------------------------------------------------------------------------------*/
+    /*Finalizando a thread de captura de alarmes*/
     printf("Finalizando thread de captura de alarmes\n");
     pthread_exit((void*)index);
 

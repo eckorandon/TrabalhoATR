@@ -30,7 +30,9 @@
         Project -> Properties -> Configuration Properties -> C/C++ -> Language
         Em "Conformance Mode" selecione a opcao "No(/permissive)".
 
-    2.  Repita o mesmo passo para todos os processos de uma mesma solucao.
+    2.  O arquivo CheckForError.h deve se encontrar dentro da pasta do projeto.
+
+    3.  Repita o mesmo passo para todos os projetos de uma mesma solucao.
 */
 
 /* ======================================================================================================================== */
@@ -40,8 +42,7 @@
 
 #define _CHECKERROR	    1				                                       /*Ativa funcao CheckForError*/
 
-/*Codigo ASCII para a tecla esc*/
-#define	ESC_KEY			27
+#define	ESC_KEY			27                                                     /*Codigo ASCII para a tecla esc*/
 
 /* ======================================================================================================================== */
 /*  INCLUDE AREA*/
@@ -62,10 +63,11 @@ HANDLE hEventKeyC, hEventKeyEsc;
 /*  RECEBE MENSSAGENS DE ALARMES CRITICOS (9) DA TAREFA DE CAPTURA DE ALARMESE*/
 /*  RECEBE MENSSAGENS DE ALARMES NAO CRITICOS (2) DA TAREFA DE LEITURA DO PIMS*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
+/*  NA ETAPA 1 SO MOSTRA O ESTADO BLOQUEADO OU DESBLOQUEADO DO PROCESSO*/
 
 int main() {
     /*Nomeando o terminal do processo*/
-    SetConsoleTitle(L"TERMINAL B");
+    SetConsoleTitle(L"TERMINAL B - Exibicao de alarmes");
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
@@ -92,6 +94,7 @@ int main() {
     HANDLE Events[2] = { hEventKeyC, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
+    /*Loop de execucao*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
@@ -127,5 +130,10 @@ int main() {
     }
 
     /*------------------------------------------------------------------------------*/
+    /*Fechando handles*/
+    CloseHandle(Events);
+
+    /*------------------------------------------------------------------------------*/
+    /*Finalizando o processo de exibicao de alarmes*/
     return EXIT_SUCCESS;
 }
