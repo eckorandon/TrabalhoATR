@@ -13,7 +13,7 @@
     Estevao Coelho Kiel de Oliveira     - 2016119416
     Italo Jose Dias                     - 2017002121
 
-    Data: Julho de 2021
+    Data: Agosto de 2021
 
     Aplicacao de software multithread responsavel pela leitura de dados tanto de de um Sistema Digital de Controle Distribuido 
     (SDCD) quanto de um Plant Information Management System (PIMS) ficticios. Os mesmos serao apresentados em dois terminais
