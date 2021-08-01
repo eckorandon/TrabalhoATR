@@ -313,7 +313,7 @@ int main() {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA SDCD*/
-/*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DE DADOS DO SDCD*/
+/*  GERACAO DE VALORES/CAPTURA DE MENSAGENS DE DADOS DO SDCD*/
 /*  GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA*/
 
 void* LeituraSDCD(void* arg) {
@@ -547,7 +547,7 @@ void* LeituraSDCD(void* arg) {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA PIMS*/
-/*  GERACAO DE VALORES/CAPTURA DE MENSSAGENS DO PIMS*/
+/*  GERACAO DE VALORES/CAPTURA DE MENSAGENS DO PIMS*/
 /*  GRAVACAO DOS ALARMES NAO CRITICOS NA LISTA CIRCULAR EM MEMORIA*/
 /*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES - ETAPA 2*/
 
@@ -767,8 +767,8 @@ void* LeituraPIMS(void* arg) {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE DADOS DO PROCESSO*/
-/*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO*/
-/*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
+/*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO - ETAPA 2*/
+/*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO - ETAPA 2*/
 /*  NA ETAPA 1 E RESPONSAVEL APENAS POR EXIBIR OS VALORES DO SDCD ARMAZENADOS NA MEMORIA NO TERMINAL PRINCIPAL*/
 
 void* CapturaDados(void* arg) {
@@ -882,8 +882,8 @@ void* CapturaDados(void* arg) {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE ALARMES*/
-/*  RETIRA AS MENSSAGENS DE ALARMES NAO CRITICOS EM MEMORIA*/
-/*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
+/*  RETIRA AS MENSAGENS DE ALARMES NAO CRITICOS DA MEMORIA*/
+/*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES - ETAPA 2*/
 /*  NA ETAPA 1 E RESPONSAVEL APENAS POR EXIBIR OS VALORES TIPO 2 DO PIMS ARMAZENADOS NA MEMORIA NO TERMINAL PRINCIPAL*/
 
 void* CapturaAlarmes(void* arg) {
