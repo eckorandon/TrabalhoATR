@@ -340,6 +340,7 @@ void* LeituraSDCD(void* arg) {
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
+            //printf("Leitura SDCD Ocupado:%d e Livre:%d\n", p_ocup,p_livre);
             /*------------------------------------------------------------------------------*/
             /*Condicao para termino da thread*/
             if (key == ESC_KEY) break;
@@ -572,6 +573,7 @@ void* LeituraPIMS(void* arg) {
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
+            //printf("Leitura PIMS Ocupado:%d e Livre:%d\n", p_ocup, p_livre);
             /*------------------------------------------------------------------------------*/
             /*Condicao para termino da thread*/
             if (key == ESC_KEY) break;
@@ -789,6 +791,9 @@ void* CapturaDados(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
+        //printf("Captura dados Ocupado:%d e Livre:%d\n", p_ocup, p_livre);
+        nTipoEvento = -1;
+        
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaDados*/
         ret = WaitForMultipleObjects(2, Events, FALSE, 1);
@@ -825,7 +830,7 @@ void* CapturaDados(void* arg) {
         if (nTipoEvento == 1) {
             key = ESC_KEY;
         }
-        else {
+        else if (nTipoEvento == 0) {
             /*Conquistando o mutex da secao critica*/
             ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, 1);
             GetLastError();
@@ -835,7 +840,7 @@ void* CapturaDados(void* arg) {
             if (nTipoEvento == 1) {
                 key = ESC_KEY;
             }
-            else {
+            else if (nTipoEvento == 0) {
                 /*Selecao dos dados apenas de tipo 1*/
                 if (RamBuffer[p_ocup][7] == '1') {
                     /*Lendo dados gravados em memoria*/
@@ -904,6 +909,8 @@ void* CapturaAlarmes(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
+        nTipoEvento = -1;
+        
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaAlarmes*/
         ret = WaitForMultipleObjects(2, Events, FALSE, 1);
@@ -940,7 +947,7 @@ void* CapturaAlarmes(void* arg) {
         if (nTipoEvento == 1) {
             key = ESC_KEY;
         }
-        else {
+        else if (nTipoEvento == 0) {
             /*Conquistando o mutex da secao critica*/
             ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, 1);
             GetLastError();
@@ -950,7 +957,7 @@ void* CapturaAlarmes(void* arg) {
             if (nTipoEvento == 1) {
                 key = ESC_KEY;
             }
-            else {
+            else if (nTipoEvento == 0) {
                 /*Selecao dos dados apenas de tipo 1*/
                 if (RamBuffer[p_ocup][7] == '2') {
                     /*Lendo dados gravados em memoria*/
