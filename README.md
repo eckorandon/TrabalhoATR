@@ -9,8 +9,8 @@ CABECALHO
     Luiz Themystokliz S. Mendes
  
     Alunos:
-    Estevao Coelho Kiel de Oliveira     - 2016119416
-    Italo Jose Dias                     - 2017002121
+    Estevao Coelho Kiel de Oliveira
+    Italo Jose Dias
 
     Data: Agosto de 2021
 
