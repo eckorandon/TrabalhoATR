@@ -703,19 +703,19 @@ void* LeituraPIMS(void* arg) {
             /*Temporizador*/
             if (critico == 2) {
                 /*Mensagens nao-criticas do PIMS se repetem de 1 a 5 s*/
-                randon = 1 + (rand() % 5);
+                randon = 1000 + (rand() % 4001);
                 ticks2 = GetTickCount();
 
-                while ((ticks2 - ticks1) < (randon * 1000)) {
+                while ((ticks2 - ticks1) < (randon)) {
                     ticks2 = GetTickCount();
                 }
             }
             else{
                 /*Mensagens criticas do PIMS se repetem de 3 a 8 s*/
-                randon = 3 + (rand() % 6);
+                randon = 3000 + (rand() % 5001);
                 ticks2 = GetTickCount();
 
-                while ((ticks2 - ticks1) < (randon * 1000)) {
+                while ((ticks2 - ticks1) < (randon)) {
                     ticks2 = GetTickCount();
                 }
             }
