@@ -319,7 +319,7 @@ int main() {
 void* LeituraSDCD(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais do LeituraSDCD()*/
-    int     index = (int)arg, status, nTipoEvento,
+    int     index = (int)arg, status, nTipoEvento, random,
             k = 0, i = 0, l = 0;
 
     char    SDCD[52], UE[9] = "        ", AM[3] = "AM",
@@ -328,7 +328,7 @@ void* LeituraSDCD(void* arg) {
                             "m       ", "kgf     ", "N       ", "m/s     ", "m/s^2   " },
             Hora[3], Minuto[3], Segundo[3], MiliSegundo[4];
     
-    DWORD   ret;
+    DWORD   ret, ticks1, ticks2;
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -340,7 +340,10 @@ void* LeituraSDCD(void* arg) {
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
-            //printf("Leitura SDCD Ocupado:%d e Livre:%d\n", p_ocup,p_livre);
+            /*------------------------------------------------------------------------------*/
+            /*Tempo de inicio*/
+            ticks1 = GetTickCount();
+
             /*------------------------------------------------------------------------------*/
             /*Condicao para termino da thread*/
             if (key == ESC_KEY) break;
@@ -525,8 +528,12 @@ void* LeituraSDCD(void* arg) {
             }
 
             /*------------------------------------------------------------------------------*/
-            /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(1000);
+            /*Temporizador - Mensagens do SDCD se repetem de 500 em 500 ms*/
+            ticks2 = GetTickCount();
+
+            while ((ticks2 - ticks1) < 500) {
+                ticks2 = GetTickCount();
+            }
 
         } /*fim do for*/
     } /*fim do while*/
