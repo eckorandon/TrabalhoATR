@@ -319,7 +319,7 @@ int main() {
 void* LeituraSDCD(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais do LeituraSDCD()*/
-    int     index = (int)arg, status, nTipoEvento, random,
+    int     index = (int)arg, status, nTipoEvento,
             k = 0, i = 0, l = 0;
 
     char    SDCD[52], UE[9] = "        ", AM[3] = "AM",
@@ -568,7 +568,7 @@ void* LeituraPIMS(void* arg) {
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
 
-    DWORD   ret;
+    DWORD   ret, ticks1, ticks2;
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -577,10 +577,13 @@ void* LeituraPIMS(void* arg) {
             MutexBuffer[2]  = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
+    /*Tempo de inicio*/
+    ticks1 = GetTickCount();
+
+    /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         for (i = 1; i < 1000000; ++i) {
-            //printf("Leitura PIMS Ocupado:%d e Livre:%d\n", p_ocup, p_livre);
             /*------------------------------------------------------------------------------*/
             /*Condicao para termino da thread*/
             if (key == ESC_KEY) break;
@@ -697,6 +700,27 @@ void* LeituraPIMS(void* arg) {
             if (key == ESC_KEY) break;
 
             /*------------------------------------------------------------------------------*/
+            /*Temporizador*/
+            if (critico == 2) {
+                /*Mensagens nao-criticas do PIMS se repetem de 1 a 5 s*/
+                randon = 1 + (rand() % 5);
+                ticks2 = GetTickCount();
+
+                while ((ticks2 - ticks1) < (randon * 1000)) {
+                    ticks2 = GetTickCount();
+                }
+            }
+            else{
+                /*Mensagens criticas do PIMS se repetem de 3 a 8 s*/
+                randon = 3 + (rand() % 6);
+                ticks2 = GetTickCount();
+
+                while ((ticks2 - ticks1) < (randon * 1000)) {
+                    ticks2 = GetTickCount();
+                }
+            }
+            
+            /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria - Apenas os dados de tipo 2 sao gravados*/
 
             /*Esperando o semaforo de espacos livres*/
@@ -728,6 +752,8 @@ void* LeituraPIMS(void* arg) {
                             RamBuffer[p_livre][j] = PIMS[j];
                         }
 
+                        ticks1 = GetTickCount();
+
                         /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                         p_livre = (p_livre + 1) % RAM;
 
@@ -739,7 +765,8 @@ void* LeituraPIMS(void* arg) {
                     }
                     else {
                         /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
-                        /*A ser implementado na Etapa 2 do trabalho*/
+
+                        ticks1 = GetTickCount();
                     }
 
                     /*Liberando o mutex da secao critica*/
@@ -751,10 +778,6 @@ void* LeituraPIMS(void* arg) {
                     GetLastError();
                 }
             }
-
-            /*------------------------------------------------------------------------------*/
-            /*Delay em milisegundos antes do fim do laco for*/
-            Sleep(1000);
 
         } /*fim do for*/
     } /*fim do while*/
