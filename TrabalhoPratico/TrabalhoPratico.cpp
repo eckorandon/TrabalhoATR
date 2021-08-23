@@ -785,6 +785,10 @@ void* LeituraPIMS(void* arg) {
                         /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
                         WriteFile(hMailslotClienteAlarme, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
 
+                        /*Avisando que uma mensagem foi escrita*/
+                        SetEvent(hEventMailslotAlarme);
+                        GetLastError();
+
                         ticks1 = GetTickCount();
                     }
 

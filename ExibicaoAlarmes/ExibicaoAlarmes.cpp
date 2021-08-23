@@ -47,6 +47,7 @@
 /* ======================================================================================================================== */
 /*  INCLUDE AREA*/
 
+#include <iostream>
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,7 +106,8 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2] = { hEventKeyC, hEventKeyEsc };
+    HANDLE Events[2]    = { hEventKeyC, hEventKeyEsc },
+           EventMail[3] = { hEventKeyC, hEventKeyEsc, hEventMailslotAlarme };
 
     /*------------------------------------------------------------------------------*/
     /*Criando servidor mailslot*/
@@ -119,7 +121,7 @@ int main() {
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
-        ret = WaitForMultipleObjects(2, Events, FALSE, 1);
+        ret = WaitForMultipleObjects(3, EventMail, FALSE, 1);
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
@@ -140,19 +142,45 @@ int main() {
             key = ESC_KEY;
         }
 
-        status = ReadFile(hMailslotServerAlarme, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
-        CheckForError(status);
+        /*Condicao para leitura do mailslot - alarmes criticos*/
+        if (nTipoEvento == 2) {
+            status = ReadFile(hMailslotServerAlarme, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
+            CheckForError(status);
 
-        /*PARA TESTES ============= Imprime as menssagems do PIMS ============= PARA TESTES*/
-        
-            for (int j = 0; j < 31; j++) {
-                printf("%c", MsgBuffer[j]);
+            /*TIMESTAMP*/
+            for (int j = 0; j < 8; j++){
+                PIMS[j] = MsgBuffer[(j+23)];
             }
 
-            printf("\n");
-        
+            /*NSEQ*/
+            for (int j = 14; j < 20; j++) {
+                PIMS[j] = MsgBuffer[(j-14)];
+            }
+            
+            /*ID ALARME*/
+            for (int j = 31; j < 35; j++) {
+                PIMS[j] = MsgBuffer[(j-22)];
+            }
 
-        
+            /*GRAU*/
+            for (int j = 41; j < 43; j++) {
+                PIMS[j] = MsgBuffer[(j-27)];
+            }
+
+            /*PREV*/
+            for (int j = 49; j < 54; j++) {
+                PIMS[j] = MsgBuffer[(j-32)];
+            }
+
+            /*Exibe alarmes criticos*/
+            printf("\033[0;31m");
+            for (int j = 0; j < 54; j++) {
+                printf("%c", PIMS[j]);
+            }
+            printf("\033[0m\n");
+
+        }
+
     }
 
     /*------------------------------------------------------------------------------*/
