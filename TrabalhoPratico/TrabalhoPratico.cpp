@@ -122,12 +122,12 @@ HANDLE hSemLivre, hSemOcupado;
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
-HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA, hEventMailslotAlarmeB;
+HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
 
 /* ======================================================================================================================== */
 /*  HANDLE MAILSLOT*/
 
-HANDLE hMailslotClienteAlarmeA, hMailslotClienteAlarmeB;
+HANDLE hMailslotClienteAlarme;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -177,11 +177,8 @@ int main() {
     hEventKeyEsc = CreateEvent(NULL, TRUE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
-    hEventMailslotAlarmeA = CreateEvent(NULL, FALSE, FALSE, L"EventMailslotAlarmeA");
-    CheckForError(hEventMailslotAlarmeA);
-
-    hEventMailslotAlarmeB = CreateEvent(NULL, FALSE, FALSE, L"EventMailslotAlarmeB");
-    CheckForError(hEventMailslotAlarmeB);
+    hEventMailslotAlarme = CreateEvent(NULL, FALSE, FALSE, L"EventMailslotAlarme");
+    CheckForError(hEventMailslotAlarme);
 
     /*------------------------------------------------------------------------------*/
     /*Threads*/
@@ -236,7 +233,7 @@ int main() {
         &si,			                                                       /*lpStartUpInfo*/
         &NewProcess);	                                                       /*lpProcessInformation*/
     if (!status) printf("Erro na criacao do Terminal A! Codigo = %d\n", GetLastError());
-    printf("opa 1");
+    
     /*Processo de exibicao de alarmes - TERMINAL B*/
     status = CreateProcess(
         L"..\\Debug\\ExibicaoAlarmes.exe",                                     /*Caminho relativo do arquivo executavel*/
@@ -250,7 +247,7 @@ int main() {
         &si,			                                                       /*lpStartUpInfo*/
         &NewProcess);	                                                       /*lpProcessInformation*/
     if (!status) printf("Erro na criacao do Terminal B! Codigo = %d\n", GetLastError());
-    printf("opa 2");
+    
     /*------------------------------------------------------------------------------*/
     /*Tratando inputs do teclado*/
     while (key != ESC_KEY) {
@@ -313,8 +310,7 @@ int main() {
     CloseHandle(hEventKeyO);
     CloseHandle(hEventKeyC);
     CloseHandle(hEventKeyEsc);
-    CloseHandle(hEventMailslotAlarmeA);
-    CloseHandle(hEventMailslotAlarmeB);
+    CloseHandle(hEventMailslotAlarme);
     CloseHandle(hSemLivre);
     CloseHandle(hSemOcupado);
     CloseHandle(hMutexBuffer);
@@ -593,12 +589,12 @@ void* LeituraPIMS(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Criando arquivo para cliente mailslot*/
-    WaitForSingleObject(hEventMailslotAlarmeA, INFINITE);
+    WaitForSingleObject(hEventMailslotAlarme, INFINITE);
     GetLastError();
 
-    hMailslotClienteAlarmeA = CreateFile(L"\\\\.\\mailslot\\MailslotAlarmeA", GENERIC_WRITE, FILE_SHARE_READ, 
+    hMailslotClienteAlarme = CreateFile(L"\\\\.\\mailslot\\MailslotAlarme", GENERIC_WRITE, FILE_SHARE_READ, 
                                          NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    CheckForError(hMailslotClienteAlarmeA != INVALID_HANDLE_VALUE);
+    CheckForError(hMailslotClienteAlarme != INVALID_HANDLE_VALUE);
 
     /*------------------------------------------------------------------------------*/
     /*Tempo de inicio*/
@@ -790,10 +786,10 @@ void* LeituraPIMS(void* arg) {
                     }
                     else {
                         /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
-                        WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
+                        WriteFile(hMailslotClienteAlarme, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
 
                         /*Avisando que uma mensagem foi escrita*/
-                        SetEvent(hEventMailslotAlarmeA);
+                        SetEvent(hEventMailslotAlarme);
                         GetLastError();
 
                         ticksA = GetTickCount();
@@ -817,7 +813,7 @@ void* LeituraPIMS(void* arg) {
     CloseHandle(MutexBuffer);
     CloseHandle(SemLivre);
     CloseHandle(Events);
-    CloseHandle(hMailslotClienteAlarmeA);
+    CloseHandle(hMailslotClienteAlarme);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando a thread leitura do PIMS*/
@@ -968,15 +964,6 @@ void* CapturaAlarmes(void* arg) {
             MutexBuffer[2]  = { hMutexBuffer, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
-    /*Criando arquivo para cliente mailslot*/
-    WaitForSingleObject(hEventMailslotAlarmeB, INFINITE);
-    GetLastError();
-
-    hMailslotClienteAlarmeB = CreateFile(L"\\\\.\\mailslot\\MailslotAlarmeB", GENERIC_WRITE, FILE_SHARE_READ,
-                                         NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    CheckForError(hMailslotClienteAlarmeB != INVALID_HANDLE_VALUE);
-
-    /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         nTipoEvento = -1;
@@ -1040,18 +1027,11 @@ void* CapturaAlarmes(void* arg) {
 
                     /*
                     /*Impressao dos dados lidos no terminal principal com a cor azul*/
-                    //printf("\x1b[34m");
-                    //for (int j = 0; j < 31; j++) {
-                    //    printf("%c", PIMS[j]);
-                    //}
-                    //printf("\x1b[0m\n");
-
-                    /*Passar alarmes nao-criticos para a tarefa de exibicao de alarmes*/
-                    WriteFile(hMailslotClienteAlarmeB, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
-
-                    /*Avisando que uma mensagem foi escrita*/
-                    SetEvent(hEventMailslotAlarmeB);
-                    GetLastError();
+                    printf("\x1b[34m");
+                    for (int j = 0; j < 31; j++) {
+                        printf("%c", PIMS[j]);
+                    }
+                    printf("\x1b[0m\n");
 
                 }
 
@@ -1071,7 +1051,6 @@ void* CapturaAlarmes(void* arg) {
     CloseHandle(MutexBuffer);
     CloseHandle(SemOcupado);
     CloseHandle(Events);
-    CloseHandle(hMailslotClienteAlarmeB);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando a thread de captura de alarmes*/

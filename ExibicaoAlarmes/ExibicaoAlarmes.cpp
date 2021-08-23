@@ -56,12 +56,12 @@
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
-HANDLE hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA, hEventMailslotAlarmeB;
+HANDLE hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
 
 /* ======================================================================================================================== */
 /*  HANDLE MAILSLOT*/
 
-HANDLE hMailslotServerAlarmeA, hMailslotServerAlarmeB;
+HANDLE hMailslotServerAlarme;
 
 /* ======================================================================================================================== */
 /*  HANDLE COR*/
@@ -102,33 +102,22 @@ int main() {
     hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
-    hEventMailslotAlarmeA = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"EventMailslotAlarmeA");
-    CheckForError(hEventMailslotAlarmeA);
+    hEventMailslotAlarme = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"EventMailslotAlarme");
+    CheckForError(hEventMailslotAlarme);
 
-    hMailslotServerAlarmeA = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarmeA");
-    CheckForError(hMailslotServerAlarmeA);
-
-    hEventMailslotAlarmeB = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"EventMailslotAlarmeB");
-    CheckForError(hEventMailslotAlarmeB);
-
-    hMailslotServerAlarmeB = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarmeB");
-    CheckForError(hMailslotServerAlarmeB);
+    hMailslotServerAlarme = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
+    CheckForError(hMailslotServerAlarme);
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
     HANDLE Events[2]    = { hEventKeyC, hEventKeyEsc },
-           EventMail[4] = { hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA, hEventMailslotAlarmeB };
+           EventMail[3] = { hEventKeyC, hEventKeyEsc, hEventMailslotAlarme };
 
     /*------------------------------------------------------------------------------*/
     /*Criando servidores mailslot*/
-    hMailslotServerAlarmeA = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarmeA", 0, MAILSLOT_WAIT_FOREVER, NULL);
-    CheckForError(hMailslotServerAlarmeA != INVALID_HANDLE_VALUE);
-    SetEvent(hEventMailslotAlarmeA);
-    GetLastError();
-
-    hMailslotServerAlarmeB = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarmeB", 0, MAILSLOT_WAIT_FOREVER, NULL);
-    CheckForError(hMailslotServerAlarmeB != INVALID_HANDLE_VALUE);
-    SetEvent(hEventMailslotAlarmeB);
+    hMailslotServerAlarme = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarme", 0, MAILSLOT_WAIT_FOREVER, NULL);
+    CheckForError(hMailslotServerAlarme != INVALID_HANDLE_VALUE);
+    SetEvent(hEventMailslotAlarme);
     GetLastError();
 
     /*------------------------------------------------------------------------------*/
@@ -136,7 +125,7 @@ int main() {
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
-        ret = WaitForMultipleObjects(4, EventMail, FALSE, 1);
+        ret = WaitForMultipleObjects(3, EventMail, FALSE, 1);
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
@@ -159,7 +148,7 @@ int main() {
 
         /*Condicao para leitura do mailslot - alarmes criticos*/
         if (nTipoEvento == 2) {
-            status = ReadFile(hMailslotServerAlarmeA, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
+            status = ReadFile(hMailslotServerAlarme, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
             CheckForError(status);
 
             /*TIMESTAMP*/
@@ -195,53 +184,13 @@ int main() {
             SetConsoleTextAttribute(hConsole, 15);
             printf("\n");
         }
-
-        /*Condicao para leitura do mailslot - alarmes nao-criticos*/
-        if (nTipoEvento == 3) {
-            status = ReadFile(hMailslotServerAlarmeB, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
-            CheckForError(status);
-
-            /*TIMESTAMP*/
-            for (int j = 0; j < 8; j++) {
-                PIMS[j] = MsgBuffer[(j + 23)];
-            }
-
-            /*NSEQ*/
-            for (int j = 14; j < 20; j++) {
-                PIMS[j] = MsgBuffer[(j - 14)];
-            }
-
-            /*ID ALARME*/
-            for (int j = 31; j < 35; j++) {
-                PIMS[j] = MsgBuffer[(j - 22)];
-            }
-
-            /*GRAU*/
-            for (int j = 41; j < 43; j++) {
-                PIMS[j] = MsgBuffer[(j - 27)];
-            }
-
-            /*PREV*/
-            for (int j = 49; j < 54; j++) {
-                PIMS[j] = MsgBuffer[(j - 32)];
-            }
-
-            /*Exibe alarmes criticos em vermelho*/
-            for (int j = 0; j < 54; j++) {
-                printf("%c", PIMS[j]);
-            }
-            printf("\n");
-        }
-
     }
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(Events);
-    CloseHandle(hMailslotServerAlarmeA);
-    CloseHandle(hEventMailslotAlarmeA);
-    CloseHandle(hMailslotServerAlarmeB);
-    CloseHandle(hEventMailslotAlarmeB);
+    CloseHandle(hMailslotServerAlarme);
+    CloseHandle(hEventMailslotAlarme);
     CloseHandle(hConsole);
 
     /*------------------------------------------------------------------------------*/
