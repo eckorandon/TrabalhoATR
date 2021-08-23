@@ -47,7 +47,6 @@
 /* ======================================================================================================================== */
 /*  INCLUDE AREA*/
 
-#include <iostream>
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,6 +62,11 @@ HANDLE hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
 /*  HANDLE MAILSLOT*/
 
 HANDLE hMailslotServerAlarme;
+
+/* ======================================================================================================================== */
+/*  HANDLE COR*/
+
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
 /* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE ALARMES*/
@@ -172,12 +176,14 @@ int main() {
                 PIMS[j] = MsgBuffer[(j-32)];
             }
 
-            /*Exibe alarmes criticos*/
-            printf("\033[0;31m");
+            /*Exibe alarmes criticos em vermelho*/
+            SetConsoleTextAttribute(hConsole, 12);
             for (int j = 0; j < 54; j++) {
                 printf("%c", PIMS[j]);
             }
-            printf("\033[0m\n");
+            SetConsoleTextAttribute(hConsole, 15);
+            printf("\n");
+            printf("reste\n");
 
         }
 
@@ -188,6 +194,7 @@ int main() {
     CloseHandle(Events);
     CloseHandle(hMailslotServerAlarme);
     CloseHandle(hEventMailslotAlarme);
+    CloseHandle(hConsole);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando o processo de exibicao de alarmes*/
