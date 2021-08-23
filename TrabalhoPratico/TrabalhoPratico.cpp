@@ -299,7 +299,7 @@ int main() {
         } /*fim do switch*/
     } /*fim do while*/
 
-    Sleep(3000);
+    Sleep(4000);
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
@@ -317,7 +317,6 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     printf("Finalizando thread de inputs do teclado\n");
-    Sleep(3000);
     return EXIT_SUCCESS;
 
 } /*fim da funcao main*/
