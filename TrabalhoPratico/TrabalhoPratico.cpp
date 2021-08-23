@@ -122,12 +122,12 @@ HANDLE hSemLivre, hSemOcupado;
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
-HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
+HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA;
 
 /* ======================================================================================================================== */
 /*  HANDLE MAILSLOT*/
 
-HANDLE hMailslotClienteAlarme;
+HANDLE hMailslotClienteAlarmeA;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -177,8 +177,8 @@ int main() {
     hEventKeyEsc = CreateEvent(NULL, TRUE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
-    hEventMailslotAlarme = CreateEvent(NULL, FALSE, FALSE, L"MailslotAlarme");
-    CheckForError(hEventMailslotAlarme);
+    hEventMailslotAlarmeA = CreateEvent(NULL, FALSE, FALSE, L"MailslotAlarme");
+    CheckForError(hEventMailslotAlarmeA);
 
     /*------------------------------------------------------------------------------*/
     /*Threads*/
@@ -299,6 +299,8 @@ int main() {
         } /*fim do switch*/
     } /*fim do while*/
 
+    Sleep(3000);
+
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(hEventKeyS);
@@ -308,14 +310,14 @@ int main() {
     CloseHandle(hEventKeyO);
     CloseHandle(hEventKeyC);
     CloseHandle(hEventKeyEsc);
-    CloseHandle(hEventMailslotAlarme);
+    CloseHandle(hEventMailslotAlarmeA);
     CloseHandle(hSemLivre);
     CloseHandle(hSemOcupado);
     CloseHandle(hMutexBuffer);
 
     /*------------------------------------------------------------------------------*/
     printf("Finalizando thread de inputs do teclado\n");
-    Sleep(2000);
+    Sleep(3000);
     return EXIT_SUCCESS;
 
 } /*fim da funcao main*/
@@ -577,7 +579,7 @@ void* LeituraPIMS(void* arg) {
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
 
-    DWORD   ret, ticks1, ticks2, dwBytesLidos;
+    DWORD   ret, ticks1, ticks2, ticksA, ticksB, dwBytesLidos;
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -587,16 +589,17 @@ void* LeituraPIMS(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Criando arquivo para cliente mailslot*/
-    WaitForSingleObject(hEventMailslotAlarme, INFINITE);
+    WaitForSingleObject(hEventMailslotAlarmeA, INFINITE);
     GetLastError();
 
-    hMailslotClienteAlarme = CreateFile(L"\\\\.\\mailslot\\MailslotAlarme", GENERIC_WRITE, FILE_SHARE_READ, 
+    hMailslotClienteAlarmeA = CreateFile(L"\\\\.\\mailslot\\MailslotAlarme", GENERIC_WRITE, FILE_SHARE_READ, 
                                         NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    CheckForError(hMailslotClienteAlarme != INVALID_HANDLE_VALUE);
+    CheckForError(hMailslotClienteAlarmeA != INVALID_HANDLE_VALUE);
 
     /*------------------------------------------------------------------------------*/
     /*Tempo de inicio*/
     ticks1 = GetTickCount();
+    ticksA = GetTickCount();
 
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
@@ -731,10 +734,10 @@ void* LeituraPIMS(void* arg) {
             else{
                 /*Mensagens criticas do PIMS se repetem de 3 a 8 s*/
                 randon = 3000 + (rand() % 5001);
-                ticks2 = GetTickCount();
+                ticksB = GetTickCount();
 
-                while ((ticks2 - ticks1) < (randon)) {
-                    ticks2 = GetTickCount();
+                while ((ticksB - ticksA) < (randon)) {
+                    ticksB = GetTickCount();
                 }
             }
             
@@ -783,13 +786,13 @@ void* LeituraPIMS(void* arg) {
                     }
                     else {
                         /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
-                        WriteFile(hMailslotClienteAlarme, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
+                        WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
 
                         /*Avisando que uma mensagem foi escrita*/
-                        SetEvent(hEventMailslotAlarme);
+                        SetEvent(hEventMailslotAlarmeA);
                         GetLastError();
 
-                        ticks1 = GetTickCount();
+                        ticksA = GetTickCount();
                     }
 
                     /*Liberando o mutex da secao critica*/
@@ -810,7 +813,7 @@ void* LeituraPIMS(void* arg) {
     CloseHandle(MutexBuffer);
     CloseHandle(SemLivre);
     CloseHandle(Events);
-    CloseHandle(hMailslotClienteAlarme);
+    CloseHandle(hMailslotClienteAlarmeA);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando a thread leitura do PIMS*/
@@ -1028,6 +1031,9 @@ void* CapturaAlarmes(void* arg) {
                         printf("%c", PIMS[j]);
                     }
                     printf("\x1b[0m\n");
+
+                    
+
                 }
 
                 /*Liberando o mutex da secao critica*/

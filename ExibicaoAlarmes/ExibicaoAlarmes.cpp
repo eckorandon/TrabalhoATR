@@ -56,12 +56,12 @@
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
-HANDLE hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
+HANDLE hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA;
 
 /* ======================================================================================================================== */
 /*  HANDLE MAILSLOT*/
 
-HANDLE hMailslotServerAlarme;
+HANDLE hMailslotServerAlarmeA;
 
 /* ======================================================================================================================== */
 /*  HANDLE COR*/
@@ -102,22 +102,22 @@ int main() {
     hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
-    hEventMailslotAlarme = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
-    CheckForError(hEventMailslotAlarme);
+    hEventMailslotAlarmeA = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
+    CheckForError(hEventMailslotAlarmeA);
 
-    hMailslotServerAlarme = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
-    CheckForError(hMailslotServerAlarme);
+    hMailslotServerAlarmeA = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
+    CheckForError(hMailslotServerAlarmeA);
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
     HANDLE Events[2]    = { hEventKeyC, hEventKeyEsc },
-           EventMail[3] = { hEventKeyC, hEventKeyEsc, hEventMailslotAlarme };
+           EventMail[3] = { hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA };
 
     /*------------------------------------------------------------------------------*/
     /*Criando servidor mailslot*/
-    hMailslotServerAlarme = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarme", 0, MAILSLOT_WAIT_FOREVER, NULL);
-    CheckForError(hMailslotServerAlarme != INVALID_HANDLE_VALUE);
-    SetEvent(hEventMailslotAlarme);
+    hMailslotServerAlarmeA = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarme", 0, MAILSLOT_WAIT_FOREVER, NULL);
+    CheckForError(hMailslotServerAlarmeA != INVALID_HANDLE_VALUE);
+    SetEvent(hEventMailslotAlarmeA);
     GetLastError();
 
     /*------------------------------------------------------------------------------*/
@@ -148,7 +148,7 @@ int main() {
 
         /*Condicao para leitura do mailslot - alarmes criticos*/
         if (nTipoEvento == 2) {
-            status = ReadFile(hMailslotServerAlarme, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
+            status = ReadFile(hMailslotServerAlarmeA, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
             CheckForError(status);
 
             /*TIMESTAMP*/
@@ -183,8 +183,6 @@ int main() {
             }
             SetConsoleTextAttribute(hConsole, 15);
             printf("\n");
-            printf("reste\n");
-
         }
 
     }
@@ -192,8 +190,8 @@ int main() {
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(Events);
-    CloseHandle(hMailslotServerAlarme);
-    CloseHandle(hEventMailslotAlarme);
+    CloseHandle(hMailslotServerAlarmeA);
+    CloseHandle(hEventMailslotAlarmeA);
     CloseHandle(hConsole);
 
     /*------------------------------------------------------------------------------*/
