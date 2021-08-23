@@ -115,7 +115,7 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Criando servidor mailslot*/
-    hMailslotServerAlarmeA = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarme", 0, MAILSLOT_WAIT_FOREVER, NULL);
+    hMailslotServerAlarmeA = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarmeA", 0, MAILSLOT_WAIT_FOREVER, NULL);
     CheckForError(hMailslotServerAlarmeA != INVALID_HANDLE_VALUE);
     SetEvent(hEventMailslotAlarmeA);
     GetLastError();
@@ -146,7 +146,7 @@ int main() {
             key = ESC_KEY;
         }
 
-        /*Condicao para leitura do mailslot - alarmes criticos*/
+        /*Condicao para leitura do mailslot*/
         if (nTipoEvento == 2) {
             status = ReadFile(hMailslotServerAlarmeA, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
             CheckForError(status);
@@ -176,13 +176,23 @@ int main() {
                 PIMS[j] = MsgBuffer[(j-32)];
             }
 
-            /*Exibe alarmes criticos em vermelho*/
-            SetConsoleTextAttribute(hConsole, 12);
-            for (int j = 0; j < 54; j++) {
-                printf("%c", PIMS[j]);
+            if (MsgBuffer[7] == '9') {
+                /*Exibe alarmes criticos em vermelho*/
+                SetConsoleTextAttribute(hConsole, 12);
+                for (int j = 0; j < 54; j++) {
+                    printf("%c", PIMS[j]);
+                }
+                SetConsoleTextAttribute(hConsole, 15);
+                printf("\n");
             }
-            SetConsoleTextAttribute(hConsole, 15);
-            printf("\n");
+            else if (MsgBuffer[7] == '2') {
+                /*Exibe alarmes nao criticos*/
+                for (int j = 0; j < 54; j++) {
+                    printf("%c", PIMS[j]);
+                }
+                printf("\n");
+            }
+            
         }
 
     }

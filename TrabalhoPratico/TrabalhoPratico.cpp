@@ -591,7 +591,7 @@ void* LeituraPIMS(void* arg) {
     WaitForSingleObject(hEventMailslotAlarmeA, INFINITE);
     GetLastError();
 
-    hMailslotClienteAlarmeA = CreateFile(L"\\\\.\\mailslot\\MailslotAlarme", GENERIC_WRITE, FILE_SHARE_READ, 
+    hMailslotClienteAlarmeA = CreateFile(L"\\\\.\\mailslot\\MailslotAlarmeA", GENERIC_WRITE, FILE_SHARE_READ, 
                                         NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     CheckForError(hMailslotClienteAlarmeA != INVALID_HANDLE_VALUE);
 
@@ -954,7 +954,7 @@ void* CapturaAlarmes(void* arg) {
 
     char    PIMS[31];
 
-    DWORD   ret;
+    DWORD   ret, dwBytesLidos;
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -1031,7 +1031,12 @@ void* CapturaAlarmes(void* arg) {
                     }
                     printf("\x1b[0m\n");
 
-                    
+                    /*Passar alarmes nao-criticos para a tarefa de exibicao de alarmes*/
+                    WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
+
+                    /*Avisando que uma mensagem foi escrita*/
+                    SetEvent(hEventMailslotAlarmeA);
+                    GetLastError();
 
                 }
 
