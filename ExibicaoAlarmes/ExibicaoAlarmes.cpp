@@ -56,7 +56,12 @@
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
-HANDLE hEventKeyC, hEventKeyEsc;
+HANDLE hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
+
+/* ======================================================================================================================== */
+/*  HANDLE MAILSLOT*/
+
+HANDLE hMailslotServerAlarme;
 
 /* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE ALARMES*/
@@ -73,13 +78,16 @@ int main() {
     /*Valores genericos para fins de formatacao*/
     int     nTipoEvento, key = 0;
 
-    char    PIMS[54] = { 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', ' ', 
-                         'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', '#', '#', ' ', 
-                         'I', 'D', ' ', 'A', 'L', 'A', 'R', 'M', 'E', ':', '#', '#', '#', '#', ' ',
-                         'G', 'R', 'A', 'U', ':', '#', '#', ' ', 
-                         'P', 'R', 'E', 'V', ':', '#', '#', '#', '#', '#' };
+    bool    status;
 
-    DWORD   ret;
+    char    PIMS[54] = { 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', ' ',
+                         'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', '#', '#', ' ',
+                         'I', 'D', ' ', 'A', 'L', 'A', 'R', 'M', 'E', ':', '#', '#', '#', '#', ' ',
+                         'G', 'R', 'A', 'U', ':', '#', '#', ' ',
+                         'P', 'R', 'E', 'V', ':', '#', '#', '#', '#', '#' },
+            MsgBuffer[31];
+
+    DWORD   ret, dwBytesLidos;
 
     /*------------------------------------------------------------------------------*/
     /*Abrindo eventos*/
@@ -89,9 +97,22 @@ int main() {
     hEventKeyEsc = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
 
+    hEventMailslotAlarme = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
+    CheckForError(hEventMailslotAlarme);
+
+    hMailslotServerAlarme = OpenEvent(EVENT_ALL_ACCESS, TRUE, L"MailslotAlarme");
+    CheckForError(hMailslotServerAlarme);
+
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
     HANDLE Events[2] = { hEventKeyC, hEventKeyEsc };
+
+    /*------------------------------------------------------------------------------*/
+    /*Criando servidor mailslot*/
+    hMailslotServerAlarme = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarme", 0, MAILSLOT_WAIT_FOREVER, NULL);
+    CheckForError(hMailslotServerAlarme != INVALID_HANDLE_VALUE);
+    SetEvent(hEventMailslotAlarme);
+    GetLastError();
 
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
@@ -114,24 +135,31 @@ int main() {
             printf("DESBLOQUEADO - Processo de exibicao de dados\n");
         }
 
-        /*Condição para termino do processo*/
+        /*Condicao para termino do processo*/
         if (nTipoEvento == 1) {
             key = ESC_KEY;
         }
 
+        status = ReadFile(hMailslotServerAlarme, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
+        CheckForError(status);
+
         /*PARA TESTES ============= Imprime as menssagems do PIMS ============= PARA TESTES*/
-        /*
-            for (int j = 0; j < 52; j++) {
-                printf("%c", PIMS[j]);
+        
+            for (int j = 0; j < 31; j++) {
+                printf("%c", MsgBuffer[j]);
             }
 
             printf("\n");
-        */
+        
+
+        
     }
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(Events);
+    CloseHandle(hMailslotServerAlarme);
+    CloseHandle(hEventMailslotAlarme);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando o processo de exibicao de alarmes*/

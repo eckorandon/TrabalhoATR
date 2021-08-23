@@ -122,7 +122,12 @@ HANDLE hSemLivre, hSemOcupado;
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
-HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc;
+HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc, hEventMailslotAlarme;
+
+/* ======================================================================================================================== */
+/*  HANDLE MAILSLOT*/
+
+HANDLE hMailslotClienteAlarme;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -171,6 +176,9 @@ int main() {
 
     hEventKeyEsc = CreateEvent(NULL, TRUE, FALSE, L"KeyEsc");
     CheckForError(hEventKeyEsc);
+
+    hEventMailslotAlarme = CreateEvent(NULL, FALSE, FALSE, L"MailslotAlarme");
+    CheckForError(hEventMailslotAlarme);
 
     /*------------------------------------------------------------------------------*/
     /*Threads*/
@@ -300,6 +308,7 @@ int main() {
     CloseHandle(hEventKeyO);
     CloseHandle(hEventKeyC);
     CloseHandle(hEventKeyEsc);
+    CloseHandle(hEventMailslotAlarme);
     CloseHandle(hSemLivre);
     CloseHandle(hSemOcupado);
     CloseHandle(hMutexBuffer);
@@ -568,13 +577,22 @@ void* LeituraPIMS(void* arg) {
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
 
-    DWORD   ret, ticks1, ticks2;
+    DWORD   ret, ticks1, ticks2, dwBytesLidos;
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
     HANDLE  Events[2]       = { hEventKeyP, hEventKeyEsc },
             SemLivre[2]     = { hSemLivre, hEventKeyEsc },
             MutexBuffer[2]  = { hMutexBuffer, hEventKeyEsc };
+
+    /*------------------------------------------------------------------------------*/
+    /*Criando arquivo para cliente mailslot*/
+    WaitForSingleObject(hEventMailslotAlarme, INFINITE);
+    GetLastError();
+
+    hMailslotClienteAlarme = CreateFile(L"\\\\.\\mailslot\\MailslotAlarme", GENERIC_WRITE, FILE_SHARE_READ, 
+                                        NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    CheckForError(hMailslotClienteAlarme != INVALID_HANDLE_VALUE);
 
     /*------------------------------------------------------------------------------*/
     /*Tempo de inicio*/
@@ -765,6 +783,7 @@ void* LeituraPIMS(void* arg) {
                     }
                     else {
                         /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
+                        WriteFile(hMailslotClienteAlarme, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
 
                         ticks1 = GetTickCount();
                     }
@@ -787,6 +806,7 @@ void* LeituraPIMS(void* arg) {
     CloseHandle(MutexBuffer);
     CloseHandle(SemLivre);
     CloseHandle(Events);
+    CloseHandle(hMailslotClienteAlarme);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando a thread leitura do PIMS*/
