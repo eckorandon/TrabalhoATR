@@ -489,7 +489,7 @@ void* LeituraSDCD(void* arg) {
 
             /*------------------------------------------------------------------------------*/
             /*Temporizador - Mensagens do SDCD se repetem de 500 em 500 ms*/
-            /*496 pois em media a conquista de mutex, semaforo e gravacao na lista circular demora 004 ms*/
+            /*498 pois em media a conquista de mutex, semaforo e gravacao na lista circular demora 002 ms*/
             ticks2 = GetTickCount();
 
             while ((ticks2 - ticks1) < 498) {
@@ -573,7 +573,8 @@ void* LeituraPIMS(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Declarando variaveis locais da funcao LeituraPIMS()*/
     int     index = (int)arg, status, nTipoEvento,
-            k = 0, i = 0, l = 0, randon = 0, critico = 0;
+            k = 0, i = 0, l = 0, randon = 0, critico = 0,
+            deadline2 = 5000, deadline9 = 8000;
 
     char    PIMS[31], CriticoNaoCritico[3] = "29",
             Hora[3], Minuto[3], Segundo[3];
@@ -643,12 +644,6 @@ void* LeituraPIMS(void* arg) {
             }
             PIMS[6] = '|';
 
-            //TIPO
-            /*Valores de TIPO - 2 = nao critico e 9 = critico*/
-            PIMS[7] = CriticoNaoCritico[(rand() % 2)];
-            critico = PIMS[7] - '0';
-            PIMS[8] = '|';
-
             /*Valores de ID ALARME - Numero aleatorio de 1 ate 9999 - Identificador da condicao anormal*/
             randon = rand() % 10000;
             k = 0;
@@ -715,6 +710,20 @@ void* LeituraPIMS(void* arg) {
                 l++;
             }
 
+            /*Valores de TIPO - 2 = nao critico e 9 = critico*/
+            /*O tipo que tem o menor tempo ate o deadline e escolhido*/
+            ticks2 = GetTickCount();
+            ticksB = GetTickCount();
+
+            if ((deadline2 - (ticks2 - ticks1)) > (deadline9 - (ticksB - ticksA))) {
+                PIMS[7] = CriticoNaoCritico[1];
+            }
+            else {
+                PIMS[7] = CriticoNaoCritico[0];
+            }
+            critico = PIMS[7] - '0';
+            PIMS[8] = '|';
+
             /*------------------------------------------------------------------------------*/
             /*Condicao para termino da thread*/
             if (key == ESC_KEY) break;
@@ -729,8 +738,10 @@ void* LeituraPIMS(void* arg) {
                 while ((ticks2 - ticks1) < (randon)) {
                     ticks2 = GetTickCount();
                 }
+
+                ticks1 = GetTickCount();
             }
-            else{
+            else if (critico == 9) {
                 /*Mensagens criticas do PIMS se repetem de 3 a 8 s*/
                 randon = 3000 + (rand() % 5001);
                 ticksB = GetTickCount();
@@ -738,11 +749,18 @@ void* LeituraPIMS(void* arg) {
                 while ((ticksB - ticksA) < (randon)) {
                     ticksB = GetTickCount();
                 }
+
+                ticksA = GetTickCount();
             }
             
             /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria - Apenas os dados de tipo 2 sao gravados*/
+            if ((p_livre == p_ocup)) {
 
+            }
+            else {
+
+            }
             /*Esperando o semaforo de espacos livres*/
             ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
             GetLastError();
@@ -772,8 +790,6 @@ void* LeituraPIMS(void* arg) {
                             RamBuffer[p_livre][j] = PIMS[j];
                         }
 
-                        ticks1 = GetTickCount();
-
                         /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                         p_livre = (p_livre + 1) % RAM;
 
@@ -782,16 +798,16 @@ void* LeituraPIMS(void* arg) {
                         if (p_livre == p_ocup) {
                             printf("MEMORIA CHEIA\n");
                         }
+
                     }
-                    else {
+                    else if (critico == 9) {
                         /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
                         WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
+                        GetLastError();
 
                         /*Avisando que uma mensagem foi escrita*/
                         SetEvent(hEventMailslotAlarmeA);
                         GetLastError();
-
-                        ticksA = GetTickCount();
                     }
 
                     /*Liberando o mutex da secao critica*/
@@ -803,7 +819,6 @@ void* LeituraPIMS(void* arg) {
                     GetLastError();
                 }
             }
-
         } /*fim do for*/
     } /*fim do while*/
 
