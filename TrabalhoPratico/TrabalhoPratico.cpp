@@ -715,11 +715,11 @@ void* LeituraPIMS(void* arg) {
             ticks2 = GetTickCount();
             ticksB = GetTickCount();
 
-            if ((deadline2 - (ticks2 - ticks1)) > (deadline9 - (ticksB - ticksA))) {
-                PIMS[7] = CriticoNaoCritico[1];
+            if ((deadline9 - (ticksB - ticksA)) >= (deadline2 - (ticks2 - ticks1))) {
+                PIMS[7] = CriticoNaoCritico[0];
             }
             else {
-                PIMS[7] = CriticoNaoCritico[0];
+                PIMS[7] = CriticoNaoCritico[1];
             }
             critico = PIMS[7] - '0';
             PIMS[8] = '|';
@@ -729,95 +729,95 @@ void* LeituraPIMS(void* arg) {
             if (key == ESC_KEY) break;
 
             /*------------------------------------------------------------------------------*/
-            /*Temporizador*/
+            /*Gravacao dos dados de tipo 2 gerados em memoria ou*/
+            /*Passagem de alarmes criticos para a tarefa de exibicao de alarmes*/
+            /*Caso s tempo de semaforo nao seja atendidos os dados sao descartados*/
+
+            /*Esperando o semaforo de espacos livres e temporizador*/
             if (critico == 2) {
-                /*Mensagens nao-criticas do PIMS se repetem de 1 a 5 s*/
-                randon = 1000 + (rand() % 4001);
-                ticks2 = GetTickCount();
-
-                while ((ticks2 - ticks1) < (randon)) {
-                    ticks2 = GetTickCount();
-                }
-
-                ticks1 = GetTickCount();
-            }
-            else if (critico == 9) {
-                /*Mensagens criticas do PIMS se repetem de 3 a 8 s*/
-                randon = 3000 + (rand() % 5001);
-                ticksB = GetTickCount();
-
-                while ((ticksB - ticksA) < (randon)) {
-                    ticksB = GetTickCount();
-                }
-
-                ticksA = GetTickCount();
-            }
-            
-            /*------------------------------------------------------------------------------*/
-            /*Gravacao dos dados gerados em memoria - Apenas os dados de tipo 2 sao gravados*/
-            if ((p_livre == p_ocup)) {
-
-            }
-            else {
-
-            }
-            /*Esperando o semaforo de espacos livres*/
-            ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
-            GetLastError();
-
-            nTipoEvento = ret - WAIT_OBJECT_0;
-
-            /*Condição para termino do processo*/
-            if (nTipoEvento == 1) {
-                key = ESC_KEY;
-                break;
-            }
-            else {
-                /*Conquistando o mutex da secao critica*/
-                ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, 1);
+                ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
                 GetLastError();
 
                 nTipoEvento = ret - WAIT_OBJECT_0;
 
+                /*Condição para termino do processo*/
                 if (nTipoEvento == 1) {
                     key = ESC_KEY;
                     break;
                 }
                 else {
-                    if (critico == 2) {
-                        /*Gravando dados em memoria RAM*/
-                        for (int j = 0; j < 31; j++) {
-                            RamBuffer[p_livre][j] = PIMS[j];
-                        }
+                    /*Temporizacao*/
+                    /*Mensagens nao-criticas do PIMS se repetem de 1 a 5 s*/
+                    randon = 1000 + (rand() % 4001);
 
-                        /*Movendo a posicao de livre para o proximo slot da memoria circular*/
-                        p_livre = (p_livre + 1) % RAM;
+                    ticks2 = GetTickCount();
 
-                        /*Quando a memoria estiver cheia a thread ficara bloqueada quando chegar no semaforo
-                        ate que uma posicao livre apareca*/
-                        if (p_livre == p_ocup) {
-                            printf("MEMORIA CHEIA\n");
-                        }
-
-                    }
-                    else if (critico == 9) {
-                        /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
-                        WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
-                        GetLastError();
-
-                        /*Avisando que uma mensagem foi escrita*/
-                        SetEvent(hEventMailslotAlarmeA);
-                        GetLastError();
+                    while ((ticks2 - ticks1) < (randon)) {
+                        ticks2 = GetTickCount();
                     }
 
-                    /*Liberando o mutex da secao critica*/
-                    status = ReleaseMutex(hMutexBuffer);
-                    GetLastError();
+                    ticks1 = GetTickCount();
 
+                    if (nTipoEvento == 0) {
+                        /*Conquistando o mutex da secao critica*/
+                        ret = WaitForMultipleObjects(2, MutexBuffer, FALSE, INFINITE);
+                        GetLastError();
+
+                        nTipoEvento = ret - WAIT_OBJECT_0;
+
+                        if (nTipoEvento == 1) {
+                            key = ESC_KEY;
+                            break;
+                        }
+                        else if (nTipoEvento == 0) {
+                            /*Gravando dados em memoria RAM*/
+                            for (int j = 0; j < 31; j++) {
+                                RamBuffer[p_livre][j] = PIMS[j];
+                            }
+
+                            /*Movendo a posicao de livre para o proximo slot da memoria circular*/
+                            p_livre = (p_livre + 1) % RAM;
+
+                            /*Quando a memoria estiver cheia a thread ficara bloqueada quando chegar no semaforo
+                            ate que uma posicao livre apareca*/
+                            if (p_livre == p_ocup) {
+                                printf("MEMORIA CHEIA\n");
+                            }
+                        }
+
+                        /*Liberando o mutex da secao critica*/
+                        status = ReleaseMutex(hMutexBuffer);
+                        GetLastError();
+                    }
+                }
+
+                if (nTipoEvento == 0 || nTipoEvento == 1) {
                     /*Liberando o semaforo de espacos ocupados*/
                     ReleaseSemaphore(hSemOcupado, 1, NULL);
                     GetLastError();
                 }
+                
+                nTipoEvento = -1;
+            } 
+            else if (critico == 9) {
+                /*Mensagens criticas do PIMS se repetem de 3 a 8 s*/
+                randon = 3000 + (rand() % 5001);
+
+                ticksB = GetTickCount();
+
+                while ((ticksB - ticksA) < (randon-1000)) {
+                    ticksB = GetTickCount();
+                }
+
+                ticksA = GetTickCount();
+
+                /*Passar alarmes criticos para a tarefa de exibicao de alarmes*/
+                WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
+                GetLastError();
+
+                /*Avisando que uma mensagem foi escrita*/
+                SetEvent(hEventMailslotAlarmeA);
+                GetLastError();
             }
         } /*fim do for*/
     } /*fim do while*/
@@ -836,7 +836,7 @@ void* LeituraPIMS(void* arg) {
 
     /*Comando nao utilizado, esta aqui apenas para compatibilidade com o Visual Studio da Microsoft*/
     return (void*)index;
-}
+} /*fim do LeituraPIMS*/
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE DADOS DO PROCESSO*/
