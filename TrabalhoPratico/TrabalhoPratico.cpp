@@ -488,6 +488,15 @@ void* LeituraSDCD(void* arg) {
             if (key == ESC_KEY) break;
 
             /*------------------------------------------------------------------------------*/
+            /*Temporizador - Mensagens do SDCD se repetem de 500 em 500 ms*/
+            /*496 pois em media a conquista de mutex, semaforo e gravacao na lista circular demora 004 ms*/
+            ticks2 = GetTickCount();
+
+            while ((ticks2 - ticks1) < 498) {
+                ticks2 = GetTickCount();
+            }
+
+            /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria*/
 
             /*Esperando o semaforo de espacos livres*/
@@ -536,15 +545,6 @@ void* LeituraSDCD(void* arg) {
                     GetLastError();
                 }
             }
-
-            /*------------------------------------------------------------------------------*/
-            /*Temporizador - Mensagens do SDCD se repetem de 500 em 500 ms*/
-            ticks2 = GetTickCount();
-
-            while ((ticks2 - ticks1) < 500) {
-                ticks2 = GetTickCount();
-            }
-
         } /*fim do for*/
     } /*fim do while*/
 
