@@ -81,7 +81,7 @@ int main() {
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
-    int     nTipoEvento, key = 0;
+    int     nTipoEvento = 2, key = 0;
 
     bool    status;
 
@@ -129,7 +129,7 @@ int main() {
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
-
+        
         if (nTipoEvento == 0) {
             printf("BLOQUEADO - Processo de exibicao de dados\n");
 
@@ -137,6 +137,10 @@ int main() {
             GetLastError();
 
             nTipoEvento = ret - WAIT_OBJECT_0;
+
+            if (nTipoEvento = 0) {
+                nTipoEvento = 2;
+            }
 
             printf("DESBLOQUEADO - Processo de exibicao de dados\n");
         }
