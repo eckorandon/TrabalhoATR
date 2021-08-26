@@ -1089,7 +1089,6 @@ void* CapturaAlarmes(void* arg) {
                     /*Avisando que uma mensagem foi escrita*/
                     SetEvent(hEventMailslotAlarmeA);
                     GetLastError();
-
                 }
 
                 /*Liberando o mutex da secao critica*/
