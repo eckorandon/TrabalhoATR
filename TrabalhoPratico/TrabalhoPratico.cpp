@@ -74,7 +74,6 @@
 #define _CHECKERROR	    1				                                        /*Ativa funcao CheckForError*/
 
 #define RAM             100                                                     /*Tamanho da lista circular em memoria ram*/
-
 #define	ESC_KEY			27                                                      /*Codigo ASCII para a tecla esc*/
 
 /* ======================================================================================================================== */
@@ -295,12 +294,14 @@ int main() {
             SetEvent(hEventKeyO);
             GetLastError();
             printf("Voce digitou a tecla O\n");
+            printf("Bloqueando processo de exibicao de dados");
             break;
         case 'c':
         case 'C':
             SetEvent(hEventKeyC);
             GetLastError();
             printf("Voce digitou a tecla C\n");
+            printf("Bloqueando processo de exibicao de alarmes");
             break;
         case ESC_KEY:
             SetEvent(hEventKeyEsc);
@@ -319,7 +320,6 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
-
     CloseHandle(hTimeOut);
     CloseHandle(hEventMailslotAlarmeA);
     CloseHandle(hEventKeyEsc);
@@ -515,6 +515,8 @@ void* LeituraSDCD(void* arg) {
             ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
             GetLastError();
 
+            nTipoEvento = ret - WAIT_OBJECT_0;
+
             /*Quando a memoria estiver cheia a gravacao de dados e interrompida
             ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
             if (ret == WAIT_TIMEOUT) {
@@ -525,10 +527,16 @@ void* LeituraSDCD(void* arg) {
                 ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
                 GetLastError();
 
+                nTipoEvento = ret - WAIT_OBJECT_0;
+
+                if (nTipoEvento == 0) {
+                    /*Liberando o semaforo de espacos livres*/
+                    ReleaseSemaphore(hSemLivre, 1, NULL);
+                    GetLastError();
+                }
+
                 printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
             }
-
-            nTipoEvento = ret - WAIT_OBJECT_0;
 
             /*Condição para termino do processo*/
             if (nTipoEvento == 1) {
