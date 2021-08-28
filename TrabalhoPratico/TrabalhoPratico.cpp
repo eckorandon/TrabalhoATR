@@ -314,21 +314,23 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Aguardando o fim dos processos e threads antes de encerrar a main*/
-    Sleep(5000);
+    WaitForSingleObject(hTimeOut, 5000);
+    GetLastError();
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
-    CloseHandle(hEventKeyS);
-    CloseHandle(hEventKeyP);
-    CloseHandle(hEventKeyD);
-    CloseHandle(hEventKeyA);
-    CloseHandle(hEventKeyO);
-    CloseHandle(hEventKeyC);
-    CloseHandle(hEventKeyEsc);
+
     CloseHandle(hTimeOut);
     CloseHandle(hEventMailslotAlarmeA);
-    CloseHandle(hSemLivre);
+    CloseHandle(hEventKeyEsc);
+    CloseHandle(hEventKeyC);
+    CloseHandle(hEventKeyO);
+    CloseHandle(hEventKeyA);
+    CloseHandle(hEventKeyD);
+    CloseHandle(hEventKeyP);
+    CloseHandle(hEventKeyS);
     CloseHandle(hSemOcupado);
+    CloseHandle(hSemLivre);
     CloseHandle(hMutexBuffer);
     
     /*------------------------------------------------------------------------------*/
@@ -517,6 +519,13 @@ void* LeituraSDCD(void* arg) {
             ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
             if (ret == WAIT_TIMEOUT) {
                 printf("MEMORIA CHEIA\n");
+
+                printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
+
+                ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
+                GetLastError();
+
+                printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
             }
 
             nTipoEvento = ret - WAIT_OBJECT_0;
@@ -858,10 +867,10 @@ void* LeituraPIMS(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
+    CloseHandle(hMailslotClienteAlarmeA);
     CloseHandle(MutexBuffer);
     CloseHandle(SemLivre);
     CloseHandle(Events);
-    CloseHandle(hMailslotClienteAlarmeA);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando a thread leitura do PIMS*/
