@@ -129,6 +129,11 @@ HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, h
 HANDLE hMailslotClienteAlarmeA;
 
 /* ======================================================================================================================== */
+/*  HANDLE ARQUIVO*/
+
+HANDLE hFile;
+
+/* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
 /*  CRIACAO DAS THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
 /*  TAREFA DE LEITURA DO TECLADO*/
@@ -181,6 +186,25 @@ int main() {
 
     hTimeOut = CreateEvent(NULL, FALSE, FALSE, L"TimeOut");
     CheckForError(hTimeOut);
+
+    /*------------------------------------------------------------------------------*/
+    /*Criando lista em disco*/
+    hFile = CreateFile(
+        L"..\\Disc.txt",
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        (LPSECURITY_ATTRIBUTES)NULL,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        (HANDLE)NULL);
+    GetLastError();
+    
+    if (hFile == INVALID_HANDLE_VALUE) {
+        printf("Falha ao abrir ao abrir o arquivo - Codigo %d. \n", GetLastError());
+    }
+    else {
+        printf("Arquivo em disco criado com sucesso\n");
+    }
 
     /*------------------------------------------------------------------------------*/
     /*Threads*/
@@ -259,7 +283,7 @@ int main() {
     else {
         printf("Processo de exibicao de alarmes e TERMINAL B criados\n\n", GetLastError());
     }
-    
+
     /*------------------------------------------------------------------------------*/
     /*Tratando inputs do teclado*/
     while (key != ESC_KEY) {
@@ -294,14 +318,14 @@ int main() {
             SetEvent(hEventKeyO);
             GetLastError();
             printf("Voce digitou a tecla O\n");
-            printf("Bloqueando processo de exibicao de dados");
+            printf("Bloqueando processo de exibicao de dados\n");
             break;
         case 'c':
         case 'C':
             SetEvent(hEventKeyC);
             GetLastError();
             printf("Voce digitou a tecla C\n");
-            printf("Bloqueando processo de exibicao de alarmes");
+            printf("Bloqueando processo de exibicao de alarmes\n");
             break;
         case ESC_KEY:
             SetEvent(hEventKeyEsc);
@@ -318,8 +342,11 @@ int main() {
     WaitForSingleObject(hTimeOut, 5000);
     GetLastError();
 
+    //DeleteFile(L"C:\\Disc.txt");
+
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
+    CloseHandle(hFile);
     CloseHandle(hTimeOut);
     CloseHandle(hEventMailslotAlarmeA);
     CloseHandle(hEventKeyEsc);
@@ -904,7 +931,7 @@ void* CapturaDados(void* arg) {
 
     char    SDCD[52];
 
-    DWORD   ret;
+    DWORD   ret, dwBytesEscritos;
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -974,6 +1001,13 @@ void* CapturaDados(void* arg) {
 
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
+
+                    //LockFile(hFile, );
+                    WriteFile(hFile, &SDCD, sizeof(SDCD), &dwBytesEscritos, NULL);
+                    GetLastError();
+                    //UnlockFile(hFile, );
+
+                    //SetEvent();
 
                     /*Impressao dos dados lidos no terminal principal com a cor amarela*/
                     printf("\x1b[33m");
@@ -1094,12 +1128,14 @@ void* CapturaAlarmes(void* arg) {
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
 
+                    /*PARA TESTES*/
                     /*Impressao dos dados lidos no terminal principal com a cor azul*/
-                    printf("\x1b[34m");
+                    /*printf("\x1b[34m");
                     for (int j = 0; j < 31; j++) {
                         printf("%c", PIMS[j]);
                     }
                     printf("\x1b[0m\n");
+                    */
 
                     /*Passar alarmes nao-criticos para a tarefa de exibicao de alarmes*/
                     WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
