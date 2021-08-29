@@ -75,7 +75,7 @@ int n_mensagem = 0;
 /*  TAREFA DE EXIBICAO DE DADOS DO PROCESSO*/
 /*  QUANDO SINALIZADA PELA TAREFA DE CAPTURA DE DADOS RETIRA MENSSAGENS DE DADOS DE PROCESSO DO ARQUIVO*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
-/*  NA ETAPA 1 SO MOSTRA O ESTADO BLOQUEADO OU DESBLOQUEADO DO PROCESSO*/
+/*  EXIBE O ESTADO BLOQUEADO OU DESBLOQUEADO DO PROCESSO*/
 
 int main() {
     /*Nomeando o terminal do processo*/
@@ -123,13 +123,11 @@ int main() {
         FILE_ATTRIBUTE_NORMAL,
         (HANDLE)NULL);
 
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-        printf("Falha ao abrir ao abrir o arquivo. Codigo %d. \n", GetLastError());
+    if (hFile == INVALID_HANDLE_VALUE) {
+        printf("Falha ao abrir ao abrir o arquivo - Codigo %d. \n", GetLastError());
     }
-    else
-    {
-        printf("Arquivo aberto com sucesso.\n");
+    else {
+        printf("Arquivo aberto com sucesso\n");
     }
 
     /*------------------------------------------------------------------------------*/
@@ -189,15 +187,13 @@ int main() {
             dwPos = SetFilePointer(hFile, dwPos, NULL, FILE_BEGIN);
             status = ReadFile(hFile,aux, dwBytesToWrite, &dwBytesWritten, NULL);
             
-            if (FALSE == status)
-            {
+            if (FALSE == status) {
                 printf("Nao foi possivel habilitar o arquivo para escrita. Codigo %d\n", GetLastError());
             }
             
             UnlockFile(hFile, 0, NULL, 52 * FILE_SIZE, NULL);
 
-            if(strcmp(aux, aux_2) != 0)
-            {   
+            if(strcmp(aux, aux_2) != 0) {   
                  /*Separacao de dados capturados do arquivo*/
                  int cont_aux = 0;
                  for (int i = 0; i < 54; i++)
@@ -246,16 +242,7 @@ int main() {
                 SetEvent(hArquivoCheio);
             }
         }
-
-        /*PARA TESTES ============= Imprime as menssagems do SDCD ============= PARA TESTES*/
-        /*
-            for (int j = 0; j < 76; j++) {
-                printf("%c", SDCD[j]);
-            }
-
-            printf("\n");
-        */
-    }
+    } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/

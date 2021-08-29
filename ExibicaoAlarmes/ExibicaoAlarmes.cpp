@@ -71,8 +71,9 @@ HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 /* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE ALARMES*/
 /*  RECEBE E EXIBE MENSAGENS DE ALARMES NAO CRITICOS (2) DA TAREFA DE CAPTURA DE ALARMES E*/
-/*  RECEBE E EXIBE MENSAGENS DE ALARMES CRITICOS (9) DA TAREFA DE LEITURA DO PIMS*/
+/*  RECEBE E EXIBE MENSAGENS DE ALARMES CRITICOS (9) DA TAREFA DE LEITURA DO PIMS AMBAS VIA MAILSLOT*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
+/*  EXIBE O ESTADO BLOQUEADO OU DESBLOQUEADO DO PROCESSO*/
 
 int main() {
     /*Nomeando o terminal do processo*/

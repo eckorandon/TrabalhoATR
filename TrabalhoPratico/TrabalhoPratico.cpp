@@ -137,11 +137,12 @@ HANDLE hMailslotClienteAlarmeA;
 
 /* ======================================================================================================================== */
 /*  HANDLE ARQUIVO EM DISCO*/
+
 HANDLE hFile;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
-/*  CRIACAO DAS THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
+/*  CRIACAO OBJETOS, LISTA EM DISCO, THREADS SECUNDARIAS E PROCESSOS FILHOS*/ 
 /*  TAREFA DE LEITURA DO TECLADO*/
 
 int main() {
@@ -278,7 +279,7 @@ int main() {
     }
     
     /*------------------------------------------------------------------------------*/
-    /*Criação de arquivo em disco*/
+    /*Criacao de arquivo em disco*/
     hFile = CreateFile(
         L"..\\DataLogger.txt",
         GENERIC_WRITE | GENERIC_READ,
@@ -288,13 +289,11 @@ int main() {
         FILE_ATTRIBUTE_NORMAL,
         (HANDLE)NULL);
 
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
+    if (hFile == INVALID_HANDLE_VALUE){
         printf("Falha ao abrir ao abrir o arquivo. Codigo %d. \n", GetLastError());
     }
-    else
-    {
-        printf("Arquivo aberto com sucesso.\n");
+    else{
+        printf("Arquivo para memoria em disco criado\n\n");
     }
 
     /*------------------------------------------------------------------------------*/
@@ -331,16 +330,17 @@ int main() {
             SetEvent(hEventKeyO);
             GetLastError();
             printf("Voce digitou a tecla O\n");
-            printf("Bloqueando processo de exibicao de dados");
+            printf("Alterando estado processo de exibicao de dados\n");
             break;
         case 'c':
         case 'C':
             SetEvent(hEventKeyC);
             GetLastError();
             printf("Voce digitou a tecla C\n");
-            printf("Bloqueando processo de exibicao de alarmes");
+            printf("Alterando estado processo de exibicao de alarmes\n");
             break;
         case ESC_KEY:
+            printf("\n");
             SetEvent(hEventKeyEsc);
             GetLastError();
             break;
@@ -381,7 +381,7 @@ int main() {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA SDCD*/
-/*  GERACAO DE VALORES/CAPTURA DE MENSAGENS DE DADOS DO SDCD*/
+/*  GERACAO DE VALORES DE MENSAGENS DE DADOS DO SDCD*/
 /*  GRAVACAO DOS MESMOS NA LISTA CIRCULAR EM MEMORIA*/
 
 void* LeituraSDCD(void* arg) {
@@ -638,9 +638,9 @@ void* LeituraSDCD(void* arg) {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE LEITURA PIMS*/
-/*  GERACAO DE VALORES/CAPTURA DE MENSAGENS DO PIMS*/
+/*  GERACAO DE VALORES DE MENSAGENS DO PIMS*/
 /*  GRAVACAO DOS ALARMES NAO CRITICOS NA LISTA CIRCULAR EM MEMORIA*/
-/*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES - ETAPA 2*/
+/*  REPASSAGEM DOS ALARMES CRITICOS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 
 void* LeituraPIMS(void* arg) {
     /*------------------------------------------------------------------------------*/
@@ -824,7 +824,6 @@ void* LeituraPIMS(void* arg) {
             /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados de tipo 2 gerados em memoria ou*/
             /*Passagem de alarmes criticos para a tarefa de exibicao de alarmes*/
-            /*Caso o tempo de semaforo nao seja atendidos os dados nao-criticos sao descartados*/
 
             /*Esperando o semaforo de espacos livres, temporizador e mutex*/
             if (critico == 2) {
@@ -877,7 +876,7 @@ void* LeituraPIMS(void* arg) {
                     GetLastError();
 
                     /*Quando a memoria estiver cheia a gravacao de dados e interrompida
-                    ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
+                    ate que uma posicao livre apareca*/
                     if (Memory) {
                         printf("MEMORIA CHEIA\n");
 
@@ -933,9 +932,8 @@ void* LeituraPIMS(void* arg) {
 
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE DADOS DO PROCESSO*/
-/*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO - ETAPA 2*/
-/*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO - ETAPA 2*/
-/*  NA ETAPA 1 E RESPONSAVEL APENAS POR EXIBIR OS VALORES DO SDCD ARMAZENADOS NA MEMORIA NO TERMINAL PRINCIPAL*/
+/*  CAPTURA DE DADOS EM MEMORIA PARA GRAVACAO EM ARQUIVO*/
+/*  SINALIZACAO DA GRAVACAO A TAREFA DE EXIBICAO DE DADOS DE PROCESSO*/
 
 void* CapturaDados(void* arg) {
     /*------------------------------------------------------------------------------*/
@@ -954,8 +952,7 @@ void* CapturaDados(void* arg) {
 
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
-    while (key != ESC_KEY) {
-        
+    while (key != ESC_KEY) {        
         nTipoEvento = -1;
         
         /*------------------------------------------------------------------------------*/
@@ -1033,7 +1030,7 @@ void* CapturaDados(void* arg) {
                     /*Semaforo que espera o arquivo de disco*/
                     status = WaitForSingleObject(hArquivo, 0);
                     if (status == WAIT_TIMEOUT) {
-                        printf("\n\t[Arquivo Cheio] daptura de dados bloqueada\n");
+                        printf("\n\t[Arquivo Cheio] captura de dados bloqueada\n");
                         WaitForSingleObject(hArquivoCheio, INFINITE);
                     }
                     else {
@@ -1042,37 +1039,23 @@ void* CapturaDados(void* arg) {
 
                     /*Bloqueado acesso ao arquivo*/
                     LockFile(hFile, 0, NULL, 52 * FILE_SIZE, NULL);
+                    
                     /*Escrita em arquivo*/
                     status = WriteFile(hFile, aux, dwBytesToWrite, &dwBytesWritten, NULL);
-                    if (status != 0)
-                    {
+                    if (status != 0){
                         n_mensagem = (n_mensagem + 1) % FILE_SIZE;
                     }
+
                     /*Desbloqueando acesso ao arquivo*/
                     UnlockFile(hFile, 0, NULL, 52 * FILE_SIZE, NULL);
 
                     /*Tratamento de erros de abertura de arquivo*/
-                    if (FALSE == status)
-                    {
-                        printf("Nao foi possivel habilitar o arquivo para escrita. Codigo %d\n", GetLastError());
-                    }
-                    else
-                    {
-                        if (dwBytesWritten != dwBytesToWrite)
-                        {
+                    if (dwBytesWritten != dwBytesToWrite) {
                             printf("Erro: Numero de dados de escrita é diferente dos dados escritos\n");
-                        }
                     }
 
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
-
-                    /*Impressao dos dados lidos no terminal principal com a cor amarela*/
-                    printf("\x1b[33m");
-                    for (int j = 0; j < 52; j++) {
-                        printf("%c", SDCD[j]);
-                    }
-                    printf("\x1b[0m\n");
 
                     /*Liberando o semaforo de espacos livres*/
                     ReleaseSemaphore(hSemLivre, 1, NULL);
@@ -1185,13 +1168,6 @@ void* CapturaAlarmes(void* arg) {
 
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
-
-                    /*Impressao dos dados lidos no terminal principal com a cor azul*/
-                    printf("\x1b[34m");
-                    for (int j = 0; j < 31; j++) {
-                        printf("%c", PIMS[j]);
-                    }
-                    printf("\x1b[0m\n");
 
                     /*Passar alarmes nao-criticos para a tarefa de exibicao de alarmes*/
                     WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
