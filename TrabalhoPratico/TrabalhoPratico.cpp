@@ -358,6 +358,8 @@ void* LeituraSDCD(void* arg) {
     
     DWORD   ret;
 
+    BOOL    Memory;
+
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
     HANDLE  Events[2]        = { hEventKeyS, hEventKeyEsc },
@@ -509,34 +511,13 @@ void* LeituraSDCD(void* arg) {
 
             /*------------------------------------------------------------------------------*/
             /*Gravacao dos dados gerados em memoria*/
-            /*Caso memória esteja cheia o dado e descartado*/
+            /*Caso memoria esteja cheia a tarefa se bloqueia*/
 
             /*Esperando o semaforo de espacos livres*/
-            ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
+            ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
             GetLastError();
 
             nTipoEvento = ret - WAIT_OBJECT_0;
-
-            /*Quando a memoria estiver cheia a gravacao de dados e interrompida
-            ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
-            if (ret == WAIT_TIMEOUT) {
-                printf("MEMORIA CHEIA\n");
-
-                printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
-
-                ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
-                GetLastError();
-
-                nTipoEvento = ret - WAIT_OBJECT_0;
-
-                if (nTipoEvento == 0) {
-                    /*Liberando o semaforo de espacos livres*/
-                    ReleaseSemaphore(hSemLivre, 1, NULL);
-                    GetLastError();
-                }
-
-                printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
-            }
 
             /*Condição para termino do processo*/
             if (nTipoEvento == 1) {
@@ -554,7 +535,7 @@ void* LeituraSDCD(void* arg) {
                     key = ESC_KEY;
                     break;
                 }
-                else {
+                else if (nTipoEvento == 0) {
                     /*Gravando dados em memoria RAM*/
                     for (int j = 0; j < 52; j++) {
                         RamBuffer[p_livre][j] = SDCD[j];
@@ -563,11 +544,7 @@ void* LeituraSDCD(void* arg) {
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_livre = (p_livre + 1) % RAM;
 
-                    /*Quando a memoria estiver cheia a gravacao de dados e interrompida
-                    ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
-                    if (p_livre == p_ocup) {
-                        //printf("MEMORIA CHEIA\n");
-                    }
+                    Memory = (p_livre == p_ocup);
 
                     /*Liberando o mutex da secao critica*/
                     status = ReleaseMutex(hMutexBuffer);
@@ -576,7 +553,30 @@ void* LeituraSDCD(void* arg) {
                     /*Liberando o semaforo de espacos ocupados*/
                     ReleaseSemaphore(hSemOcupado, 1, NULL);
                     GetLastError();
+                    
+                    /*Quando a memoria estiver cheia a gravacao de dados e interrompida
+                    ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
+                    if (Memory) {
+                        printf("MEMORIA CHEIA\n");
+
+                        printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
+
+                        ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
+                        GetLastError();
+
+                        nTipoEvento = ret - WAIT_OBJECT_0;
+
+                        if (nTipoEvento == 0) {
+                            /*Liberando o semaforo de espacos livres*/
+                            ReleaseSemaphore(hSemLivre, 1, NULL);
+                            GetLastError();
+                        }
+
+                        printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura SDCD\n");
+                    }
                 }
+            
+                nTipoEvento = -1;
             }
         } /*fim do for*/
     } /*fim do while*/
@@ -613,6 +613,8 @@ void* LeituraPIMS(void* arg) {
             Hora[3], Minuto[3], Segundo[3];
 
     DWORD   ret, ticks1, ticks2, ticksA, ticksB, dwBytesLidos;
+
+    BOOL    Memory;
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -752,14 +754,10 @@ void* LeituraPIMS(void* arg) {
             time2 = deadline2 - (ticks2 - ticks1);
             time9 = deadline9 - (ticksB - ticksA);
 
-            //printf("2 - %d\n", time2);
-            //printf("9 - %d\n", time9);
-
             if (time9 >= time2) {
                 PIMS[7] = CriticoNaoCritico[0];
 
-                if (time2 <= 4000)
-                {
+                if (time2 <= 4000) {
                     randon = (rand() % time2);
                 }
                 else {
@@ -769,8 +767,7 @@ void* LeituraPIMS(void* arg) {
             else {
                 PIMS[7] = CriticoNaoCritico[1];
 
-                if (time9 <= 5000)
-                {
+                if (time9 <= 5000) {
                     randon = (rand() % time9);
                 }
                 else {
@@ -779,8 +776,6 @@ void* LeituraPIMS(void* arg) {
             }
             critico = PIMS[7] - '0';
             PIMS[8] = '|';
-
-            //printf("%d\n", critico);
 
             /*------------------------------------------------------------------------------*/
             /*Condicao para termino da thread*/
@@ -793,14 +788,8 @@ void* LeituraPIMS(void* arg) {
 
             /*Esperando o semaforo de espacos livres, temporizador e mutex*/
             if (critico == 2) {
-                ret = WaitForMultipleObjects(2, SemLivre, FALSE, 1);
+                ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
                 GetLastError();
-
-                /*Quando a memoria estiver cheia a gravacao de dados e interrompida
-                ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
-                if (ret == WAIT_TIMEOUT) {
-                    printf("MEMORIA CHEIA\n");
-                }
 
                 nTipoEvento = ret - WAIT_OBJECT_0;
 
@@ -811,7 +800,6 @@ void* LeituraPIMS(void* arg) {
                 }
                 else if (nTipoEvento == 0) {
                     /*Temporizador - Mensagens do PIMS nao-criticas se repetem de 1 a 5 s*/
-                    //randon = 1000 + (rand() % 4001);
 
                     ticks1 = GetTickCount();
 
@@ -837,29 +825,41 @@ void* LeituraPIMS(void* arg) {
                         /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                         p_livre = (p_livre + 1) % RAM;
 
-                        /*Quando a memoria estiver cheia a gravacao de dados e interrompida
-                        ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
-                        if (p_livre == p_ocup) {
-                            //printf("MEMORIA CHEIA\n");
-                        }
+                        Memory = (p_livre == p_ocup);
                     }
 
                     /*Liberando o mutex da secao critica*/
                     status = ReleaseMutex(hMutexBuffer);
                     GetLastError();
-                }
 
-                if (nTipoEvento == 0 || nTipoEvento == 1) {
                     /*Liberando o semaforo de espacos ocupados*/
                     ReleaseSemaphore(hSemOcupado, 1, NULL);
                     GetLastError();
+
+                    /*Quando a memoria estiver cheia a gravacao de dados e interrompida
+                    ate que uma posicao livre apareca - os dados nao escritos sao descartados*/
+                    if (Memory) {
+                        printf("MEMORIA CHEIA\n");
+
+                        printf("\x1b[31m""BLOQUEADO""\x1b[0m"" - Thread Leitura PIMS\n");
+
+                        ret = WaitForMultipleObjects(2, SemLivre, FALSE, INFINITE);
+                        GetLastError();
+
+                        nTipoEvento = ret - WAIT_OBJECT_0;
+
+                        if (nTipoEvento == 0) {
+                            /*Liberando o semaforo de espacos livres*/
+                            ReleaseSemaphore(hSemLivre, 1, NULL);
+                            GetLastError();
+                        }
+
+                        printf("\x1b[32m""DESBLOQUEADO""\x1b[0m"" - Thread Leitura PIMS\n");
+                    }
                 }
-                
-                nTipoEvento = -1;
             } 
             else if (critico == 9) {
                 /*Temporizador - Mensagens do PIMS criticas se repetem de 3 a 8 s*/
-                //randon = 3000 + (rand() % 5001);
 
                 ticksA = GetTickCount();
 
@@ -870,6 +870,8 @@ void* LeituraPIMS(void* arg) {
                 WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
                 GetLastError();
             }
+
+            nTipoEvento = -1;
         } /*fim do for*/
     } /*fim do while*/
 
@@ -913,7 +915,7 @@ void* CapturaDados(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
-        //printf("Captura dados Ocupado:%d e Livre:%d\n", p_ocup, p_livre);
+        printf("Captura dados Ocupado:%d e Livre:%d\n", p_ocup, p_livre);
         nTipoEvento = -1;
         
         /*------------------------------------------------------------------------------*/
@@ -943,7 +945,7 @@ void* CapturaDados(void* arg) {
         /*Leitura dos dados gerados e gravados em memoria do SDCD*/
 
         /*Esperando o semaforo de espacos ocupados*/
-        ret = WaitForMultipleObjects(2, SemOcupado, FALSE, 1);
+        ret = WaitForMultipleObjects(2, SemOcupado, FALSE, INFINITE);
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
@@ -979,20 +981,22 @@ void* CapturaDados(void* arg) {
                         printf("%c", SDCD[j]);
                     }
                     printf("\x1b[0m\n");
+
+                    /*Liberando o semaforo de espacos livres*/
+                    ReleaseSemaphore(hSemLivre, 1, NULL);
+                    GetLastError();
+                }
+                else {
+                    /*Liberando o semaforo de espacos ocupados*/
+                    ReleaseSemaphore(hSemOcupado, 1, NULL);
+                    GetLastError();
                 }
 
                 /*Liberando o mutex da secao critica*/
                 status = ReleaseMutex(hMutexBuffer);
                 GetLastError();
-
-                /*Liberando o semaforo de espacos livres*/
-                ReleaseSemaphore(hSemLivre, 1, NULL);
-                GetLastError();
             }
         }
-
-        nTipoEvento = -1;
-
     } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/
@@ -1013,8 +1017,7 @@ void* CapturaDados(void* arg) {
 /* ======================================================================================================================== */
 /*  THREAD SECUNDARIA DE CAPTURA DE ALARMES*/
 /*  RETIRA AS MENSAGENS DE ALARMES NAO CRITICOS DA MEMORIA*/
-/*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES - ETAPA 2*/
-/*  NA ETAPA 1 E RESPONSAVEL APENAS POR EXIBIR OS VALORES TIPO 2 DO PIMS ARMAZENADOS NA MEMORIA NO TERMINAL PRINCIPAL*/
+/*  REPASSAGEM DAS MESMAS PARA A TAREFA DE EXIBICAO DE ALARMES*/
 
 void* CapturaAlarmes(void* arg) {
     /*------------------------------------------------------------------------------*/
@@ -1034,8 +1037,6 @@ void* CapturaAlarmes(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
-        nTipoEvento = -1;
-        
         /*------------------------------------------------------------------------------*/
         /*Bloqueio e desbloqueio da thread CapturaAlarmes*/
         ret = WaitForMultipleObjects(2, Events, FALSE, 1);
@@ -1063,7 +1064,7 @@ void* CapturaAlarmes(void* arg) {
         /*Leitura dos dados gerados em memoria*/
         
         /*Esperando o semaforo de espacos ocupados*/
-        ret = WaitForMultipleObjects(2, SemOcupado, FALSE, 1);
+        ret = WaitForMultipleObjects(2, SemOcupado, FALSE, INFINITE);
         GetLastError();
 
         nTipoEvento = ret - WAIT_OBJECT_0;
@@ -1103,23 +1104,21 @@ void* CapturaAlarmes(void* arg) {
                     /*Passar alarmes nao-criticos para a tarefa de exibicao de alarmes*/
                     WriteFile(hMailslotClienteAlarmeA, &PIMS, sizeof(PIMS), &dwBytesLidos, NULL);
 
-                    /*Avisando que uma mensagem foi escrita*/
-                    SetEvent(hEventMailslotAlarmeA);
+                    /*Liberando o semaforo de espacos livres*/
+                    ReleaseSemaphore(hSemLivre, 1, NULL);
+                    GetLastError();
+                }
+                else {
+                    /*Liberando o semaforo de espacos ocupados*/
+                    ReleaseSemaphore(hSemOcupado, 1, NULL);
                     GetLastError();
                 }
 
                 /*Liberando o mutex da secao critica*/
                 status = ReleaseMutex(hMutexBuffer);
                 GetLastError();
-
-                /*Liberando o semaforo de espacos livres*/
-                ReleaseSemaphore(hSemLivre, 1, NULL);
-                GetLastError();
             }
         }
-
-        nTipoEvento = -1;
-
     } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/

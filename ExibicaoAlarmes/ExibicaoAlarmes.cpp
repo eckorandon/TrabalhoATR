@@ -204,8 +204,7 @@ int main() {
                     printf("%c", PIMS[j]);
                 }
                 printf("\n");
-            }
-            
+            }   
         }
     } /*fim do while*/
 
