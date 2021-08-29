@@ -91,6 +91,7 @@
 #include <conio.h>		                                                        /*_getch()*/
 #include <math.h>                                                               /*pow()*/
 #include <time.h>
+#include <string.h>
 #include "CheckForError.h"                                                      /*CheckForError()*/
 
 /* ======================================================================================================================== */
@@ -121,12 +122,13 @@ HANDLE hMutexBuffer;
 /* ======================================================================================================================== */
 /*  HANDLE SEMAFOROS*/
 
-HANDLE hSemLivre, hSemOcupado;
+HANDLE hSemLivre, hSemOcupado, hArquivo;
 
 /* ======================================================================================================================== */
 /*  HANDLE EVENTOS*/
 
 HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA, hTimeOut;
+HANDLE hArquivoCheio;
 
 /* ======================================================================================================================== */
 /*  HANDLE MAILSLOT*/
@@ -162,6 +164,9 @@ int main() {
     hSemOcupado = CreateSemaphore(NULL, 0, RAM, L"SemOcupado");
     CheckForError(hSemOcupado);
 
+    hArquivo = CreateSemaphore(NULL, FILE_SIZE, FILE_SIZE, L"SemArquivo");
+    CheckForError(hArquivo);
+
     /*------------------------------------------------------------------------------*/
     /*Criando objetos do tipo eventos*/
     hEventKeyS = CreateEvent(NULL, FALSE, FALSE, L"KeyS");
@@ -190,6 +195,9 @@ int main() {
 
     hTimeOut = CreateEvent(NULL, FALSE, FALSE, L"TimeOut");
     CheckForError(hTimeOut);
+
+    hArquivoCheio = CreateEvent(NULL, FALSE, TRUE, L"ArquivoCheio");
+    CheckForError(hArquivoCheio);
 
     /*------------------------------------------------------------------------------*/
     /*Threads*/
@@ -273,12 +281,12 @@ int main() {
     /*Criação de arquivo em disco*/
     hFile = CreateFile(
         L"..\\DataLogger.txt",
-        GENERIC_READ,
+        GENERIC_WRITE | GENERIC_READ,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
-        NULL,
-        OPEN_ALWAYS,
+        (LPSECURITY_ATTRIBUTES)NULL,
+        CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
-        NULL);
+        (HANDLE)NULL);
 
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -358,8 +366,10 @@ int main() {
     CloseHandle(hEventKeyD);
     CloseHandle(hEventKeyP);
     CloseHandle(hEventKeyS);
+    CloseHandle(hArquivoCheio);
     CloseHandle(hSemOcupado);
     CloseHandle(hSemLivre);
+    CloseHandle(hArquivo);
     CloseHandle(hMutexBuffer);
     CloseHandle(hFile);
     
@@ -998,25 +1008,48 @@ void* CapturaDados(void* arg) {
                 /*Selecao dos dados apenas de tipo 1*/
                 if (RamBuffer[p_ocup][7] == '1') {
                     /*Lendo dados gravados em memoria*/
-                    for (int j = 0; j < 52; j++) {
-                        SDCD[j] = RamBuffer[p_ocup][j];
+                    char aux[54];
+                    for (int j = 0; j < 54; j++) {
+                        if (j < 52) 
+                        {
+                            SDCD[j] = RamBuffer[p_ocup][j];
+                            aux[j] = SDCD[j];
+                        }
+                        else if(j == 52)
+                        {
+                            aux[j] = '\r';
+                        }
+                        else if (j == 53)
+                        {
+                            aux[j] = '\n';
+                        }
                     }
 
                     /*Setando valores dos parametros das funcoes de tratamento de arquivo*/
-                    dwBytesToWrite = (DWORD)strlen(RamBuffer[p_ocup]);
+                    dwBytesToWrite = (DWORD)strlen(aux) * sizeof(char) - 11;
                     dwBytesWritten = 0;
-                    dwPos = SetFilePointer(hFile, n_mensagem * strlen(RamBuffer[p_ocup]), NULL, FILE_BEGIN);
+                    dwPos = SetFilePointer(hFile, n_mensagem * dwBytesToWrite, NULL, FILE_BEGIN);
+
+                    /*Semaforo que espera o arquivo de disco*/
+                    status = WaitForSingleObject(hArquivo, 0);
+                    if (status == WAIT_TIMEOUT) {
+                        printf("\n\t[Arquivo Cheio] daptura de dados bloqueada\n");
+                        WaitForSingleObject(hArquivoCheio, INFINITE);
+                    }
+                    else {
+                        ResetEvent(hArquivoCheio);
+                    }
 
                     /*Bloqueado acesso ao arquivo*/
-                    LockFile(hFile, dwPos, 0, dwBytesWritten, 0);
+                    LockFile(hFile, 0, NULL, 52 * FILE_SIZE, NULL);
                     /*Escrita em arquivo*/
-                    status = WriteFile(hFile, RamBuffer[p_ocup], dwBytesToWrite, &dwBytesWritten, NULL);
+                    status = WriteFile(hFile, aux, dwBytesToWrite, &dwBytesWritten, NULL);
                     if (status != 0)
                     {
                         n_mensagem = (n_mensagem + 1) % FILE_SIZE;
                     }
                     /*Desbloqueando acesso ao arquivo*/
-                    UnlockFile(hFile, dwPos, 0, dwBytesWritten, 0);
+                    UnlockFile(hFile, 0, NULL, 52 * FILE_SIZE, NULL);
 
                     /*Tratamento de erros de abertura de arquivo*/
                     if (FALSE == status)
@@ -1028,10 +1061,6 @@ void* CapturaDados(void* arg) {
                         if (dwBytesWritten != dwBytesToWrite)
                         {
                             printf("Erro: Numero de dados de escrita é diferente dos dados escritos\n");
-                        }
-                        else
-                        {
-                            printf("Foram escritos %d bytes.\n", dwBytesWritten);
                         }
                     }
 
@@ -1151,40 +1180,7 @@ void* CapturaAlarmes(void* arg) {
                 if (RamBuffer[p_ocup][7] == '2') {
                     /*Lendo dados gravados em memoria*/
                     for (int j = 0; j < 31; j++) {
-                        PIMS[j] = RamBuffer[p_ocup][j];
-                    }
-
-                    /*Setando valores dos parametros das funcoes de tratamento de arquivo*/
-                    dwBytesToWrite = (DWORD)strlen(RamBuffer[p_ocup]);
-                    dwBytesWritten = 0;
-                    dwPos = SetFilePointer(hFile, n_mensagem*31, NULL, FILE_BEGIN);
-
-                    /*Bloqueado acesso ao arquivo*/
-                    LockFile(hFile, dwPos, 0, dwBytesWritten, 0);
-                    /*Escrita em arquivo*/
-                    status = WriteFile(hFile, RamBuffer[p_ocup], dwBytesToWrite, &dwBytesWritten, NULL);
-                    if (status != 0)
-                    {
-                        n_mensagem = (n_mensagem + 1) % FILE_SIZE;
-                    }
-                    /*Desbloqueando acesso ao arquivo*/
-                    UnlockFile(hFile, dwPos, 0, dwBytesWritten, 0);
-
-                    /*Tratamento de erros de abertura de arquivo*/
-                    if (FALSE == status)
-                    {
-                        printf("Nao foi possivel habilitar o arquivo para escrita. Codigo %d\n", GetLastError());
-                    }
-                    else
-                    {
-                        if (dwBytesWritten != dwBytesToWrite)
-                        {
-                            printf("Erro: Numero de dados de escrita é diferente dos dados escritos\n");
-                        }
-                        else
-                        {
-                            printf("Foram escritos %d bytes.\n", dwBytesWritten);
-                        }
+                         PIMS[j] = RamBuffer[p_ocup][j];
                     }
 
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
