@@ -70,10 +70,9 @@ HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
 /* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE ALARMES*/
-/*  RECEBE MENSSAGENS DE ALARMES CRITICOS (9) DA TAREFA DE CAPTURA DE ALARMESE*/
-/*  RECEBE MENSSAGENS DE ALARMES NAO CRITICOS (2) DA TAREFA DE LEITURA DO PIMS*/
+/*  RECEBE E EXIBE MENSAGENS DE ALARMES NAO CRITICOS (2) DA TAREFA DE CAPTURA DE ALARMES E*/
+/*  RECEBE E EXIBE MENSAGENS DE ALARMES CRITICOS (9) DA TAREFA DE LEITURA DO PIMS*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
-/*  NA ETAPA 1 SO MOSTRA O ESTADO BLOQUEADO OU DESBLOQUEADO DO PROCESSO*/
 
 int main() {
     /*Nomeando o terminal do processo*/
@@ -81,7 +80,7 @@ int main() {
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
-    int     nTipoEvento, key = 0;
+    int     nTipoEvento = 2, key = 0;
 
     bool    status;
 
@@ -92,7 +91,7 @@ int main() {
                          'P', 'R', 'E', 'V', ':', '#', '#', '#', '#', '#' },
             MsgBuffer[31];
 
-    DWORD   ret, dwBytesLidos;
+    DWORD   ret, dwBytesLidos, MenssageCount;
 
     /*------------------------------------------------------------------------------*/
     /*Abrindo eventos*/
@@ -110,12 +109,11 @@ int main() {
 
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
-    HANDLE Events[2]    = { hEventKeyC, hEventKeyEsc },
-           EventMail[3] = { hEventKeyC, hEventKeyEsc, hEventMailslotAlarmeA };
+    HANDLE Events[2] = { hEventKeyC, hEventKeyEsc };
 
     /*------------------------------------------------------------------------------*/
     /*Criando servidor mailslot*/
-    hMailslotServerAlarmeA = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarme", 0, MAILSLOT_WAIT_FOREVER, NULL);
+    hMailslotServerAlarmeA = CreateMailslot(L"\\\\.\\mailslot\\MailslotAlarmeA", 0, MAILSLOT_WAIT_FOREVER, NULL);
     CheckForError(hMailslotServerAlarmeA != INVALID_HANDLE_VALUE);
     SetEvent(hEventMailslotAlarmeA);
     GetLastError();
@@ -124,21 +122,33 @@ int main() {
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
-        /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
-        ret = WaitForMultipleObjects(3, EventMail, FALSE, 1);
+        /*Bloqueio e desbloqueio ou finalizacao do processo de exibicao de dados do processo*/
+        ret = WaitForMultipleObjects(2, Events, FALSE, 1);
         GetLastError();
 
-        nTipoEvento = ret - WAIT_OBJECT_0;
-
+        if (ret != WAIT_TIMEOUT) {
+            nTipoEvento = ret - WAIT_OBJECT_0;
+        }
+        
         if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Processo de exibicao de dados\n");
+            SetConsoleTextAttribute(hConsole, 12);
+            printf("BLOQUEADO");
+            SetConsoleTextAttribute(hConsole, 15);
+            printf(" - Processo de exibicao de dados\n");
 
             ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
             GetLastError();
 
             nTipoEvento = ret - WAIT_OBJECT_0;
 
-            printf("DESBLOQUEADO - Processo de exibicao de dados\n");
+            if (nTipoEvento == 0) {
+                nTipoEvento = 2;
+            }
+
+            SetConsoleTextAttribute(hConsole, 10);
+            printf("DESBLOQUEADO");
+            SetConsoleTextAttribute(hConsole, 15);
+            printf(" - Processo de exibicao de dados\n");
         }
 
         /*Condicao para termino do processo*/
@@ -146,52 +156,65 @@ int main() {
             key = ESC_KEY;
         }
 
-        /*Condicao para leitura do mailslot - alarmes criticos*/
-        if (nTipoEvento == 2) {
+        GetMailslotInfo(hMailslotServerAlarmeA, (LPDWORD)NULL, (LPDWORD)NULL, &MenssageCount, (LPDWORD)NULL);
+        GetLastError();
+
+        /*Caso nTipoEvento nao tenha sido alterado -> leitura do mailslot*/
+        if (nTipoEvento == 2 && (int)MenssageCount > 0) {
             status = ReadFile(hMailslotServerAlarmeA, &MsgBuffer, sizeof(MsgBuffer), &dwBytesLidos, NULL);
             CheckForError(status);
 
             /*TIMESTAMP*/
-            for (int j = 0; j < 8; j++){
-                PIMS[j] = MsgBuffer[(j+23)];
+            for (int j = 0; j < 8; j++) {
+                PIMS[j] = MsgBuffer[(j + 23)];
             }
 
             /*NSEQ*/
             for (int j = 14; j < 20; j++) {
-                PIMS[j] = MsgBuffer[(j-14)];
+                PIMS[j] = MsgBuffer[(j - 14)];
             }
-            
+
             /*ID ALARME*/
             for (int j = 31; j < 35; j++) {
-                PIMS[j] = MsgBuffer[(j-22)];
+                PIMS[j] = MsgBuffer[(j - 22)];
             }
 
             /*GRAU*/
             for (int j = 41; j < 43; j++) {
-                PIMS[j] = MsgBuffer[(j-27)];
+                PIMS[j] = MsgBuffer[(j - 27)];
             }
 
             /*PREV*/
             for (int j = 49; j < 54; j++) {
-                PIMS[j] = MsgBuffer[(j-32)];
+                PIMS[j] = MsgBuffer[(j - 32)];
             }
 
-            /*Exibe alarmes criticos em vermelho*/
-            SetConsoleTextAttribute(hConsole, 12);
-            for (int j = 0; j < 54; j++) {
-                printf("%c", PIMS[j]);
+            if (MsgBuffer[7] == '9') {
+                /*Exibe alarmes criticos em vermelho*/
+                SetConsoleTextAttribute(hConsole, 12);
+                for (int j = 0; j < 54; j++) {
+                    printf("%c", PIMS[j]);
+                }
+                SetConsoleTextAttribute(hConsole, 15);
+                printf("\n");
             }
-            SetConsoleTextAttribute(hConsole, 15);
-            printf("\n");
+            else if (MsgBuffer[7] == '2') {
+                /*Exibe alarmes nao criticos*/
+                for (int j = 0; j < 54; j++) {
+                    printf("%c", PIMS[j]);
+                }
+                printf("\n");
+            }   
         }
-
-    }
+    } /*fim do while*/
 
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(Events);
     CloseHandle(hMailslotServerAlarmeA);
     CloseHandle(hEventMailslotAlarmeA);
+    CloseHandle(hEventKeyEsc);
+    CloseHandle(hEventKeyC);
     CloseHandle(hConsole);
 
     /*------------------------------------------------------------------------------*/

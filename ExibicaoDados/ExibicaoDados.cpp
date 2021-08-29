@@ -59,6 +59,11 @@
 HANDLE hEventKeyO, hEventKeyEsc;
 
 /* ======================================================================================================================== */
+/*  HANDLE COR*/
+
+HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
+/* ======================================================================================================================== */
 /*  TAREFA DE EXIBICAO DE DADOS DO PROCESSO*/
 /*  QUANDO SINALIZADA PELA TAREFA DE CAPTURA DE DADOS RETIRA MENSSAGENS DE DADOS DE PROCESSO DO ARQUIVO*/
 /*  EXIBE AS MESMAS NO TERMINAL*/
@@ -70,7 +75,7 @@ int main() {
     
     /*Declarando variaveis locais main()*/
     /*Valores genericos para fins de formatacao*/
-    int     nTipoEvento, key = 0;
+    int     nTipoEvento = 2, key = 0;
 
     char    SDCD[76] = { 'N', 'S', 'E', 'Q', ':', '#', '#', '#', '#', ' ', 
                          'H', 'O', 'R', 'A', ':', 'H', 'H', ':', 'M', 'M', ':', 'S', 'S', '.', 'M', 'S', 'S', ' ',
@@ -97,26 +102,42 @@ int main() {
     /*Loop de execucao*/
     while (key != ESC_KEY) {
         /*------------------------------------------------------------------------------*/
-        /*Bloqueio e desbloqueio do processo de exibicao de dados do processo*/
+        /*Bloqueio e desbloqueio ou finalizacao do processo de exibicao de dados do processo*/
         ret = WaitForMultipleObjects(2, Events, FALSE, 1);
         GetLastError();
 
-        nTipoEvento = ret - WAIT_OBJECT_0;
+        if (ret != WAIT_TIMEOUT) {
+            nTipoEvento = ret - WAIT_OBJECT_0;
+        }
 
         if (nTipoEvento == 0) {
-            printf("BLOQUEADO - Processo de exibicao de alarmes\n");
+            SetConsoleTextAttribute(hConsole, 12);
+            printf("BLOQUEADO");
+            SetConsoleTextAttribute(hConsole, 15);
+            printf(" - Processo de exibicao de alarmes\n");
             
             ret = WaitForMultipleObjects(2, Events, FALSE, INFINITE);
             GetLastError();
 
             nTipoEvento = ret - WAIT_OBJECT_0;
 
-            printf("DESBLOQUEADO - Processo de exibicao alarmes\n");
+            if (nTipoEvento == 0) {
+                nTipoEvento = 2;
+            }
+
+            SetConsoleTextAttribute(hConsole, 10);
+            printf("DESBLOQUEADO");
+            SetConsoleTextAttribute(hConsole, 15);
+            printf(" - Processo de exibicao alarmes\n");
         }
 
-        /*Condição para termino do processo*/
+        /*Condicao para termino do processo*/
         if (nTipoEvento == 1) {
             key = ESC_KEY;
+        }
+
+        if (nTipoEvento == 2) {
+            //Logica do processo aqui
         }
 
         /*PARA TESTES ============= Imprime as menssagems do SDCD ============= PARA TESTES*/
@@ -132,6 +153,9 @@ int main() {
     /*------------------------------------------------------------------------------*/
     /*Fechando handles*/
     CloseHandle(Events);
+    CloseHandle(hEventKeyEsc);
+    CloseHandle(hEventKeyO);
+    CloseHandle(hConsole);
 
     /*------------------------------------------------------------------------------*/
     /*Finalizando o processo de exibicao de dados*/
