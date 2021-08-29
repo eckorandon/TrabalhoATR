@@ -229,15 +229,15 @@ int main() {
                  }
                 
                 /*Impressao de dados em console*/
-                printf("NSEQ :");
+                printf("NSEQ:");
                 for (int i = 0; i < 6; i++) printf("%c", NSEQ[i]);
-                printf(" HORA :");
+                printf(" HORA:");
                 for (int i = 0; i < 12; i++) printf("%c", HORA[i]);
-                printf(" TAG :");
+                printf(" TAG:");
                 for (int i = 0; i < 10; i++) printf("%c", TAG[i]);
-                printf(" VALOR :");
+                printf(" VALOR:");
                 for (int i = 0; i < 8; i++) printf("%c", VALOR[i]);
-                printf(" HORA :");
+                printf(" HORA:");
                 for (int i = 0; i < 8; i++) printf("%c", UE[i]);
                 printf(" MODO:%c\r\n", MODO);
 
