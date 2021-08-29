@@ -915,7 +915,7 @@ void* CapturaDados(void* arg) {
     /*------------------------------------------------------------------------------*/
     /*Loop de execucao*/
     while (key != ESC_KEY) {
-        printf("Captura dados Ocupado:%d e Livre:%d\n", p_ocup, p_livre);
+        
         nTipoEvento = -1;
         
         /*------------------------------------------------------------------------------*/
