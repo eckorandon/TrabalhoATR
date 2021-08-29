@@ -45,7 +45,7 @@
  
     5.  Por fim, selecione Project -> Properties -> Configuration Properties -> Debugging 
         e entao preencha o item "Environment" com
-        PATH=C:\Program Files\pthreads-w32-2-9-1-release\Pre-built.2\dll\x86
+        PATH=C:\Program Files\pthreads-w32-2-9-1-release\Pre-built.2\dll\x86 
 
     6. Certifique-se de que o seu projeto esta como x86. Do lado de Debug é possivel alterar
        este parametro.
@@ -75,6 +75,7 @@
 
 #define RAM             100                                                     /*Tamanho da lista circular em memoria ram*/
 #define	ESC_KEY			27                                                      /*Codigo ASCII para a tecla esc*/
+#define FILE_SIZE       200                                                     /*Tamanho do arquivo em disco*/
 
 /* ======================================================================================================================== */
 /*  INCLUDE AREA*/
@@ -83,6 +84,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <tchar.h>
 #include <pthread.h>
 #include <errno.h>
 #include <signal.h>
@@ -108,6 +110,9 @@ char    RamBuffer[RAM][52], key;
 /*Variaveis de controle das posicoes na lista circular*/
 int     p_ocup = 0, p_livre = 0;
 
+/*Variavel de controle da posicao no arquivo em disco*/
+int     n_mensagem = 0;
+
 /* ======================================================================================================================== */
 /*  HANDLE MUTEX*/
 
@@ -127,6 +132,10 @@ HANDLE hEventKeyS, hEventKeyP, hEventKeyD, hEventKeyA, hEventKeyO, hEventKeyC, h
 /*  HANDLE MAILSLOT*/
 
 HANDLE hMailslotClienteAlarmeA;
+
+/* ======================================================================================================================== */
+/*  HANDLE ARQUIVO EM DISCO*/
+HANDLE hFile;
 
 /* ======================================================================================================================== */
 /*  THREAD PRIMARIA*/
@@ -261,6 +270,26 @@ int main() {
     }
     
     /*------------------------------------------------------------------------------*/
+    /*Criação de arquivo em disco*/
+    hFile = CreateFile(
+        L"..\\DataLogger.txt",
+        GENERIC_READ,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        NULL,
+        OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        printf("Falha ao abrir ao abrir o arquivo. Codigo %d. \n", GetLastError());
+    }
+    else
+    {
+        printf("Arquivo aberto com sucesso.\n");
+    }
+
+    /*------------------------------------------------------------------------------*/
     /*Tratando inputs do teclado*/
     while (key != ESC_KEY) {
         key = _getch();
@@ -332,6 +361,7 @@ int main() {
     CloseHandle(hSemOcupado);
     CloseHandle(hSemLivre);
     CloseHandle(hMutexBuffer);
+    CloseHandle(hFile);
     
     /*------------------------------------------------------------------------------*/
     printf("Finalizando - Inputs do teclado\n");
@@ -904,7 +934,7 @@ void* CapturaDados(void* arg) {
 
     char    SDCD[52];
 
-    DWORD   ret;
+    DWORD   ret, dwBytesToWrite, dwBytesWritten, dwPos;
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -972,6 +1002,39 @@ void* CapturaDados(void* arg) {
                         SDCD[j] = RamBuffer[p_ocup][j];
                     }
 
+                    /*Setando valores dos parametros das funcoes de tratamento de arquivo*/
+                    dwBytesToWrite = (DWORD)strlen(RamBuffer[p_ocup]);
+                    dwBytesWritten = 0;
+                    dwPos = SetFilePointer(hFile, n_mensagem * strlen(RamBuffer[p_ocup]), NULL, FILE_BEGIN);
+
+                    /*Bloqueado acesso ao arquivo*/
+                    LockFile(hFile, dwPos, 0, dwBytesWritten, 0);
+                    /*Escrita em arquivo*/
+                    status = WriteFile(hFile, RamBuffer[p_ocup], dwBytesToWrite, &dwBytesWritten, NULL);
+                    if (status != 0)
+                    {
+                        n_mensagem = (n_mensagem + 1) % FILE_SIZE;
+                    }
+                    /*Desbloqueando acesso ao arquivo*/
+                    UnlockFile(hFile, dwPos, 0, dwBytesWritten, 0);
+
+                    /*Tratamento de erros de abertura de arquivo*/
+                    if (FALSE == status)
+                    {
+                        printf("Nao foi possivel habilitar o arquivo para escrita. Codigo %d\n", GetLastError());
+                    }
+                    else
+                    {
+                        if (dwBytesWritten != dwBytesToWrite)
+                        {
+                            printf("Erro: Numero de dados de escrita é diferente dos dados escritos\n");
+                        }
+                        else
+                        {
+                            printf("Foram escritos %d bytes.\n", dwBytesWritten);
+                        }
+                    }
+
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
                     p_ocup = (p_ocup + 1) % RAM;
 
@@ -1026,7 +1089,7 @@ void* CapturaAlarmes(void* arg) {
 
     char    PIMS[31];
 
-    DWORD   ret, dwBytesLidos;
+    DWORD   ret, dwBytesLidos, dwBytesToWrite, dwBytesWritten, dwPos;
     
     /*------------------------------------------------------------------------------*/
     /*Vetor com handles da tarefa*/
@@ -1089,6 +1152,39 @@ void* CapturaAlarmes(void* arg) {
                     /*Lendo dados gravados em memoria*/
                     for (int j = 0; j < 31; j++) {
                         PIMS[j] = RamBuffer[p_ocup][j];
+                    }
+
+                    /*Setando valores dos parametros das funcoes de tratamento de arquivo*/
+                    dwBytesToWrite = (DWORD)strlen(RamBuffer[p_ocup]);
+                    dwBytesWritten = 0;
+                    dwPos = SetFilePointer(hFile, n_mensagem*31, NULL, FILE_BEGIN);
+
+                    /*Bloqueado acesso ao arquivo*/
+                    LockFile(hFile, dwPos, 0, dwBytesWritten, 0);
+                    /*Escrita em arquivo*/
+                    status = WriteFile(hFile, RamBuffer[p_ocup], dwBytesToWrite, &dwBytesWritten, NULL);
+                    if (status != 0)
+                    {
+                        n_mensagem = (n_mensagem + 1) % FILE_SIZE;
+                    }
+                    /*Desbloqueando acesso ao arquivo*/
+                    UnlockFile(hFile, dwPos, 0, dwBytesWritten, 0);
+
+                    /*Tratamento de erros de abertura de arquivo*/
+                    if (FALSE == status)
+                    {
+                        printf("Nao foi possivel habilitar o arquivo para escrita. Codigo %d\n", GetLastError());
+                    }
+                    else
+                    {
+                        if (dwBytesWritten != dwBytesToWrite)
+                        {
+                            printf("Erro: Numero de dados de escrita é diferente dos dados escritos\n");
+                        }
+                        else
+                        {
+                            printf("Foram escritos %d bytes.\n", dwBytesWritten);
+                        }
                     }
 
                     /*Movendo a posicao de livre para o proximo slot da memoria circular*/
