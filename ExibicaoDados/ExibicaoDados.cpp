@@ -233,7 +233,7 @@ int main() {
                 for (int i = 0; i < 6; i++) printf("%c", NSEQ[i]);
                 printf(" HORA:");
                 for (int i = 0; i < 12; i++) printf("%c", HORA[i]);
-                printf(" TAG:");
+                printf("TAG:");
                 for (int i = 0; i < 10; i++) printf("%c", TAG[i]);
                 printf(" VALOR:");
                 for (int i = 0; i < 8; i++) printf("%c", VALOR[i]);
